@@ -4,32 +4,26 @@ import matplotlib.pyplot as plt
 
 def odes(x, t):
     '''
-    x:list a list of outputs corresponding to [A, B, C] at
+    x:list a list of outputs of each non-derived function at
     t:float time
     '''
 
     # constants
-    a1 = 3e5
-    a2 = 0.2
-    a3 = 4e-7
-    a4 = 0.6
-    a5 = 8
-    a6 = 90
+    a = -1
+    tau_lag = 1 ##
 
     # assign each ODE to a vector element
-    A = x[0]
-    B = x[1]
-    C = x[2]
+    G = x[0]
+    L = x[1]
 
     # define each ODE
-    dAdt = a1 - a2*A - a3*A*C
-    dBdt = a3*A*C - a4*B
-    dCdt = -a3*A*C - a5*C + a6*B
+    dGdt = a*G + L/tau_lag
+    dLdt = -L/tau_lag
 
-    return [dAdt, dBdt, dCdt]
+    return [dGdt, dLdt]
 
 # define initial conditions
-x0 = [2e6, 0, 90]
+x0 = [0, 1]
 
 # (opt) test the defined ODEs
 print(odes(x=x0, t=0))
@@ -40,12 +34,11 @@ t = np.linspace(0, 15, 1000)
 
 x = odeint(odes, x0, t)
 
-A = x[:, 0]
-B = x[:, 1]
-C = x[:, 2]
+G = x[:, 0]
+L = x[:, 1]
 
 # plot
-plt.semilogy(t, A)
-plt.semilogy(t, B)
-plt.semilogy(t, C)
+plt.semilogy(t, G, label='growing')
+plt.semilogy(t, L, label='lagging')
+plt.legend()
 plt.show()

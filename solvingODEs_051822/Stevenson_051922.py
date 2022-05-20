@@ -1,10 +1,12 @@
+# from https://youtu.be/MXUMJMrX2Gw
+
 from scipy.integrate import odeint
 import numpy as np
 import matplotlib.pyplot as plt
 
 def odes(x, t):
     '''
-    x:list a list of outputs corresponding to [A, B, C] at
+    x:list a list of outputs of each non-derived function at
     t:float time
     '''
 
