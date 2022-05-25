@@ -10,7 +10,7 @@ def odes(x, t):
 
     # constants
     a = -1
-    tau_lag = 1 ##
+    tau_lag = 3 ##
 
     # assign each ODE to a vector element
     G = x[0]
