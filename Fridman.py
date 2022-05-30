@@ -112,7 +112,7 @@ for tau in taus:
     G2 = y[:, 0]
     L2 = y[:, 1]
 
-    total = copy.deepcopy(G2 + L2)
+    total = G2 + L2
 
     #n_0
     n_0.append((math.e)**-tlim2 * (total[-1]))
