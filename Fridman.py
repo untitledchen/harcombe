@@ -2,7 +2,6 @@ from scipy.integrate import odeint
 import numpy as np
 import matplotlib.pyplot as plt
 
-import copy
 import math
 
 # for tweaking purposes
