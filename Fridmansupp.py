@@ -33,23 +33,23 @@ x = odeint(odes, x0, t, args=(-1, tau_lag))
 
 G = x[:, 0]
 L = x[:, 1]
-'''
+
 plt.semilogy(t, G+L)
 plt.title('antibiotic phase')
 plt.ylabel('log(g+l)')
 plt.xlabel('t')
 plt.show()
-'''
+
 ### phase 2: no antibiotic, a = 1
 x2 = [G[-1], L[-1]]
-print(x2)
+print('[G, L] at end of phase 1:', x2)
 z = np.linspace(0, tlim2, 1000)
 
 y = odeint(odes, x2, z, args=(1, tau_lag))
 
 G2 = y[:, 0]
 L2 = y[:, 1]
-'''
+
 plt.semilogy(z, G2+L2)
 
 plt.title('non-antibiotic phase')
@@ -59,41 +59,9 @@ plt.ylim(sum(x2)*1e-2)
 
 plt.show()
 
-'''
-'''
-### see what the calculated values of n*0 look like
-total2 = G2+L2
+### n*0 (approximation) over tau_lag
 n_0 = []
-for i in range(len(z)):
-    n_0.append((math.e)**(-(z[i])) * (total2[i]))
-    
-plt.plot(z, n_0)
-plt.show()
-'''
-'''
-# as t --> infinity (& slope approaches growth rate), calculated n*0 levels out to a certain value below 0.15
-
-dGdt = []
-for i in range(len(z)):
-    dGdt.append(1*G2[i] + L2[i]/tau_lag)
-    
-dLdt = []
-for i in range(len(z)):
-    dLdt.append(-L2[i]/tau_lag)
-
-dtotal = []
-for i in range(len(dLdt)):
-    dtotal.append(dGdt[i] + dLdt[i])
-
-plt.semilogy(z, G2+L2, label='g+l')
-plt.semilogy(z, dtotal, label='dg+dt')
-plt.legend()
-plt.show()
-'''
-
-###
-n_0 = []
-taus = np.linspace(0, 12, 1000)[1:]
+taus = np.linspace(0, 12, 1000)[1:] # to avoid divide by zero error
 
 for tau in taus:
     #phase 1
@@ -117,14 +85,13 @@ for tau in taus:
     #n_0
     n_0.append((math.e)**-tlim2 * (total[-1]))
 
-    '''
-    n_0 = []
-    for i in range(len(z)):
-        n_0.append((math.e)**(-(z[i])) * (total[i]))
-    
-    plt.plot(z, n_0)
-    plt.show()
-    '''
-    
 plt.plot(taus, n_0)
+plt.ylabel('n*0')
+plt.xlabel('tau lag')
 plt.show()
+
+# testing to find max
+print(max(n_0))
+print(n_0.index(max(n_0)))
+print(n_0[n_0.index(max(n_0))])
+print(taus[n_0.index(max(n_0))])
