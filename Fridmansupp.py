@@ -73,7 +73,7 @@ taus = np.linspace(0, 12, 1000)[1:] # list of tau_lags to be tested, ranging fro
     # [1:] to avoid a divide by zero error
 
 for tau in taus:
-    # phase 1
+    # phase 1, antibiotics
     x0 = [0, 1]
     t_interval = np.linspace(0, Ta, 1000)
     x = odeint(odes, x0, t_interval, args=(-1, tau))
@@ -81,7 +81,7 @@ for tau in taus:
     G = x[:, 0]
     L = x[:, 1]
 
-    # phase 2
+    # phase 2, no antibiotics
     x2 = [G[-1], L[-1]]
     t_interval2 = np.linspace(0, tlim2, 1000)
     y = odeint(odes, x2, t_interval2, args=(1, tau))
@@ -91,8 +91,8 @@ for tau in taus:
 
     total = G2 + L2
 
-    # add calculated n*0 to n_0
-    n_0.append((math.e)**-tlim2 * (total[-1])) # calculate n*0 using the last t value available, == tlim2
+    # append calculated n*0 to n_0
+    n_0.append((math.e)**-tlim2 * (total[-1])) # calculate n*0 using the last t value available (== tlim2)
 
 # plot: tau_lag vs. calculated n*0
 plt.plot(taus, n_0)
