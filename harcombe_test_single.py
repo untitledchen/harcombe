@@ -49,7 +49,7 @@ def odes(x, t, r1=1, tau_lag1=6, r2=1, tau_lag2=6, K1=100, q1=1, n1=1, K2=100, q
 
             interactions += locals()[f'alpha1{i}{j}']*locals()[f'N1{j}_g'] ## wait why does this work? N1j_g should not exist at this point
 
-        # dN1i_gdt
+        # dN1i_gdt ##R1 should be strain-specific 6/6
         locals()[f'dN1{i}_gdt'] = locals()[f'r1{i}']*locals()[f'N1{i}_g']*(R1/(R1 + locals()[f'K1{i}']) - interactions/locals()[f'K1{i}']) + locals()[f'N1{i}_l']/locals()[f'tau_lag1{i}']
 
         # dN1i_ldt
