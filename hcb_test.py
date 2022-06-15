@@ -30,7 +30,7 @@ def odes(x, t, antibiotic_yn, nE=1, nS=1):
         # constants
         locals()[f'rE{i}'] = 1*antibiotic_yn #
         locals()[f'kE{i}'] = 5e-9 #
-        locals()[f'tau_lagE{i}'] =  random.uniform(1,12) #
+        globals()[f'tau_lagE{i}'] =  random.uniform(1,12) #
 
         # resource constants
         locals()[f'cM{i}'] = 0.1 #
@@ -42,8 +42,8 @@ def odes(x, t, antibiotic_yn, nE=1, nS=1):
         locals()[f'El{i}'] = x[2 + 2*i]
 
         # differential equations
-        locals()[f'dEg{i}dt'] = locals()[f'rE{i}']*locals()[f'Eg{i}']*(M/(M+K_M))*(L/(L+K_L)) - locals()[f'kE{i}']*locals()[f'E{i}'] + locals()[f'El{i}']/locals()[f'tau_lagE{i}']
-        locals()[f'dEl{i}dt'] = -locals()[f'El{i}']/locals()[f'tau_lagE{i}']
+        locals()[f'dEg{i}dt'] = locals()[f'rE{i}']*locals()[f'Eg{i}']*(M/(M+K_M))*(L/(L+K_L)) - locals()[f'kE{i}']*locals()[f'Eg{i}'] + locals()[f'El{i}']/globals()[f'tau_lagE{i}'] #
+        locals()[f'dEl{i}dt'] = -locals()[f'El{i}']/globals()[f'tau_lagE{i}'] #
 
     # S
     for j in range(1, nS + 1):
@@ -54,15 +54,15 @@ def odes(x, t, antibiotic_yn, nE=1, nS=1):
         locals()[f'tau_lagS{j}'] = 6 # fixed
 
         # resource constants
-        locals()[f'cA{i}'] = 1.0 #
-        locals()[f'pM{i}'] = 1.56 #
+        locals()[f'cA{j}'] = 1.0 #
+        locals()[f'pM{j}'] = 1.56 #
         
         # solutions -- starting after the last strain of El, Sg and Sl occupy alternating indexes for each strain
         locals()[f'Sg{j}'] = x[(1 + 2*nE) + 2*j]
         locals()[f'Sl{j}'] = x[(2 + 2*nE) + 2*j]
 
         # differential equations
-        locals()[f'dSg{j}dt'] = locals()[f'rS{j}']*locals()[f'Sg{j}']*(M/(M+K_M))*(L/(L+K_L)) - locals()[f'kS{j}']*locals()[f'S{j}'] + locals()[f'Sl{j}']/locals()[f'tau_lagS{j}']
+        locals()[f'dSg{j}dt'] = locals()[f'rS{j}']*locals()[f'Sg{j}']*(M/(M+K_M))*(L/(L+K_L)) - locals()[f'kS{j}']*locals()[f'Sg{j}'] + locals()[f'Sl{j}']/locals()[f'tau_lagS{j}']
         locals()[f'dSl{j}dt'] = -locals()[f'Sl{j}']/locals()[f'tau_lagS{j}']
 
     # M
@@ -97,15 +97,14 @@ def odes(x, t, antibiotic_yn, nE=1, nS=1):
         to_return.append(locals()[f'dEg{i}dt'])
         to_return.append(locals()[f'dEl{i}dt'])
     for j in range(1, nS + 1):
-        to_return.append(locals()[f'dSg{i}dt'])
-        to_return.append(locals()[f'dSl{i}dt'])
+        to_return.append(locals()[f'dSg{j}dt'])
+        to_return.append(locals()[f'dSl{j}dt'])
 
     return to_return
 
-def run_phase1(init_cond, odes, Ta, nE, nS):
-    t_interval1 = np.linspace(0, Ta, 1000)
+def run_phase1(init_cond, odes, t_interval, Ta, nE, nS):
 
-    sol1 = odeint(odes, init_cond, t_interval1, args=(1, nE, nS))
+    sol1 = odeint(odes, init_cond, t_interval, args=(1, nE, nS))
 
     return sol1
 
@@ -122,8 +121,44 @@ def run_phase2(sol):
     return sol2
 
 def start():
-    init_cond = [1, 1, 1, 0, 1, 0, 1]
-    Ta = 
+    init_cond = [1, 1, 1, 0, 1, 0, 1] #
+    Ta = 6 #
+    nE = 1 #
+    nS = 1 #
 
-    run_phase1(init_cond, odes, Ta
+    # phase 1
+    print('Running phase 1: antibiotic present. Growth rate = maximum growth rate * -1')
+    print('Initial conditions:')
+    print(f'Ta: {Ta}')
+    print(f'M: {init_cond[0]}')
+    print(f'A: {init_cond[1]}')
+    print(f'L: {init_cond[2]}')
+    for i in range(1, nE + 1):
+        print(f'Eg{i}: {init_cond[1 + 2*i]}')
+        print(f'El{i}: {init_cond[2 + 2*i]}')
+    for j in range(1, nS + 1):
+        print(f'Sg{j}: {init_cond[(1 + 2*nE) + 2*j]}')
+        print(f'Sl{j}: {init_cond[(2 + 2*nE) + 2*j]}')
 
+    t_interval1 = np.linspace(0, Ta, 1000)
+    sol1 = run_phase1(init_cond, odes, t_interval1, Ta, nE, nS)
+    M = sol1[:, 0]
+    A = sol1[:, 1]
+    L = sol1[:, 2]
+    for i in range(1, nE + 1):
+        locals()[f'Eg{i}'] = sol1[:, (1 + 2*i)]
+        locals()[f'El{i}'] = sol1[:, (2 + 2*i)]
+    for j in range(1, nS + 1):
+        locals()[f'Sg{j}'] = sol1[:, (1 + 2*nE) + 2*j]
+        locals()[f'Sl{j}'] = sol1[:, (2 + 2*nE) + 2*j]
+
+    for i in range(1, nE + 1):
+        plt.semilogy(t_interval1, locals()[f'Eg{i}']+locals()[f'El{i}'], label=str(globals()[f'tau_lagE{i}'])) #
+    for j in range(1, nS + 1):
+        plt.semilogy(t_interval1, locals()[f'Sg{j}']+locals()[f'Sl{j}'])
+    plt.ylabel('log(Eg + El)')
+    plt.xlabel('t')
+    plt.legend()
+
+    plt.show()
+    
