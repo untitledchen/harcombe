@@ -77,7 +77,7 @@ def run_phase2(odes, init_cond, t_interval, nE, tau_lag):
 
 def start(init_M, init_L):
     print(f'Running start({init_M}, {init_L}). Initial methionine = {init_M}, initial lactose = {init_L}.')
-    tau_lag = 6 #
+    tau_lag = 7 #
     
     Ta = 6 #
     nE = 3 #
