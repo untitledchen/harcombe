@@ -49,7 +49,7 @@ def odes(x, t, alpha, nE, tau_lag):
     for i in range(1, nE + 1):
         sigma_cM += locals()[f'cM{i}']*locals()[f'Eg{i}']*(M/(M+K_M))*(L/(L+K_L))
     ''' 
-    dMdt = 10
+    dMdt = 0
     
     # L
     '''
@@ -57,7 +57,7 @@ def odes(x, t, alpha, nE, tau_lag):
     for i in range(1, nE + 1):
         sigma_cL += locals()[f'cL{i}']*locals()[f'Eg{i}']*(M/(M+K_M))*(L/(L+K_L))
     '''  
-    dLdt = 10
+    dLdt = 0
 
     to_return = [dMdt,dLdt]
     for i in range(1, nE + 1): ## could probably use list comprehension instead of this for loop
@@ -78,65 +78,56 @@ def run_phase2(odes, init_cond, t_interval, nE, tau_lag):
     return sol2
 
 ### n*0 (approximation) over tau_lag
+Ta = 6 ##
+
 tlim2 = 15 #
 t_interval2 = np.linspace(0, tlim2, 1000)
 
 nE = 3 #
-init_cond = [10, 10] + [0, 1]*nE
+init_cond = [10000, 10000] + [0, 1]*nE
 
-Talim = 11 # max Tas to try
-opt_taus = [] # list of tau_lags that produce the maximum n*0 for their specific Ta
-Tas = [i for i in range(1, Talim + 1)] # list of Tas to try, whole numbers only
-#print('M and L kept constant at 10')
-for Ta in Tas:
+n_0 = [] # list of all calculated n*0s for each tau_lag tested
+taus = np.linspace(0, 12, 1000)[1:] # list of tau_lags to be tested, ranging from just above 0 to 12.00
+# [1:] to avoid a divide by zero error
 
-    n_0 = [] # list of all calculated n*0s for each tau_lag tested
-    taus = np.linspace(0, 12, 1000)[1:] # list of tau_lags to be tested, ranging from just above 0 to 12.00
-    # [1:] to avoid a divide by zero error
-    
-    for tau in taus:
+for tau in taus:
 
-        # phase 1, antibiotics
-        t_interval1 = np.linspace(0, Ta, 1000)
-        sol1 = run_phase1(odes, init_cond, t_interval1, nE, tau)
-            
-        M = sol1[:, 0]
-        L = sol1[:, 1]
-        for i in range(1, nE + 1):
-            locals()[f'Eg{i}'] = sol1[:, (2*i)]
-            locals()[f'El{i}'] = sol1[:, (1 + 2*i)]
+    # phase 1, antibiotics
+    t_interval1 = np.linspace(0, Ta, 1000)
+    sol1 = run_phase1(odes, init_cond, t_interval1, nE, tau)
+        
+    M = sol1[:, 0]
+    L = sol1[:, 1]
+    for i in range(1, nE + 1):
+        locals()[f'Eg{i}'] = sol1[:, (2*i)]
+        locals()[f'El{i}'] = sol1[:, (1 + 2*i)]
 
-        # phase 2, no antibiotics
-        init_cond2 = [M[-1], L[-1]]
-        for i in range(1, nE + 1):
-            init_cond2 += [locals()[f'Eg{i}'][-1], locals()[f'El{i}'][-1]]
-            
-        sol2 = run_phase2(odes, init_cond2, t_interval2, nE, tau)
-            
-        M = sol2[:, 0]
-        L = sol2[:, 1]
-        for i in range(1, nE + 1):
-            locals()[f'Eg{i}'] = sol2[:, (2*i)]
-            locals()[f'El{i}'] = sol2[:, (1 + 2*i)]
+    # phase 2, no antibiotics
+    init_cond2 = [M[-1], L[-1]]
+    for i in range(1, nE + 1):
+        init_cond2 += [locals()[f'Eg{i}'][-1], locals()[f'El{i}'][-1]]
+        
+    sol2 = run_phase2(odes, init_cond2, t_interval2, nE, tau)
+        
+    M = sol2[:, 0]
+    L = sol2[:, 1]
+    for i in range(1, nE + 1):
+        locals()[f'Eg{i}'] = sol2[:, (2*i)]
+        locals()[f'El{i}'] = sol2[:, (1 + 2*i)]
 
-        # let's just focus on strain 1 for now
-        total = Eg1 + El1
+    # let's just focus on strain 1 for now
+    total = Eg1 + El1
 
-        # append calculated n*0 to n_0
-        n_0.append((math.e)**-tlim2 * (total[-1])) # calculate n*0 using the last t value available (== tlim2)
+    # append calculated n*0 to n_0
+    n_0.append((math.e)**-tlim2 * (total[-1])) # calculate n*0 using the last t value available (== tlim2)
 
-    # append the tau_lag corresponding to max(n_0) to opt_taus
-    opt_taus.append(taus[n_0.index(max(n_0))])
+# plot: tau_lag vs. calculated n*0
+plt.plot(taus, n_0)
 
-# plot
-fig = plt.figure()
-ax = fig.add_subplot()
+plt.title('Effective Population (n*0) as a Result of Lag Time (tau_lag)')
+plt.ylabel('n*0')
+plt.xlabel('tau_lag')
 
-plt.plot(Tas, opt_taus)
-
-plt.title('Optimal Lag Time (Optimal tau_lag) Corresponding to a Given Duration of Antibiotic Treatment (Ta)')
-plt.ylabel('Optimal tau_lag')
-plt.xlabel('Ta')
-ax.set_aspect('equal', adjustable='box')
+plt.show()
 
 plt.show()
