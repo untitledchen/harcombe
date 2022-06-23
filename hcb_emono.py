@@ -2,22 +2,25 @@ from scipy.integrate import odeint
 import numpy as np
 import matplotlib.pyplot as plt
 
-import math
 import random
+import math
 
-###
+### define odes equation
 def odes(x, t, alpha, nE, tau_lag):
     '''
+    x: list of initial conditions
+    t: list of times
     alpha: additional death rate due to antibiotic, as a proportion of max growth rate r
+    nE: number of strains of E. coli
+    tau_lag: list of lag times of each strain # all identical for now
     '''
     
     M = x[0]
     L = x[1]
 
-    # half-velocity constants
+    # half-saturation constants
     K_M = 1 #
     K_L = 1 #
-    K_A = 1 #
 
     # resource decay constants
     kM = 5e-9 #
@@ -29,8 +32,8 @@ def odes(x, t, alpha, nE, tau_lag):
         # constants
         locals()[f'rE{i}'] = 1 #
         locals()[f'kE{i}'] = 5e-9 #
-        globals()[f'tau_lagE{i}'] = tau_lag ## set all strains to same tau_lag for now
-
+        globals()[f'tau_lagE{i}'] = tau_lag[i - 1]
+        
         # resource constants
         locals()[f'cM{i}'] = 0.1 #
         locals()[f'cL{i}'] = 1.0 #
@@ -65,109 +68,90 @@ def odes(x, t, alpha, nE, tau_lag):
     return to_return
 ###
 
+### phase 1: antibiotic
 def run_phase1(odes, init_cond, t_interval, nE, tau_lag):
-
-    sol1 = odeint(odes, init_cond, t_interval, args=(2, nE, tau_lag)) ## when alpha = -2, effective growth rate = -r
-    return sol1
-
-def run_phase2(odes, init_cond, t_interval, nE, tau_lag):
-
-    sol2 = odeint(odes, init_cond, t_interval, args=(0, nE, tau_lag))
-    return sol2
-
-def start(init_M, init_L):
-    print(f'Running start({init_M}, {init_L}). Initial methionine = {init_M}, initial lactose = {init_L}.')
-    tau_lag = 7 #
+    print(f'Running phase 1: antibiotic, with {init_cond}')
     
-    Ta = 6 #
-    nE = 3 #
-    init_cond = [init_M, init_L] + [0, 1]*nE
+    sol = odeint(odes, init_cond, t_interval, args=(2, nE, tau_lag)) ## when alpha = -2, effective growth rate = -r
+    return sol
 
-    # phase 1
-    print('Running phase 1: antibiotic present. Growth rate = maximum growth rate * -1')
-    print('Initial conditions:')
-    print(f'Ta: {Ta}')
-    print(f'M: {init_cond[0]}')
-    print(f'L: {init_cond[1]}')
-    for i in range(1, nE + 1):
-        print(f'Eg{i}: {init_cond[2*i]}')
-        print(f'El{i}: {init_cond[1 + 2*i]}')
-
-    t_interval1 = np.linspace(0, Ta, 1000)
-    sol1 = run_phase1(odes, init_cond, t_interval1, nE, tau_lag)
+### phase 2: no antibiotic
+def run_phase2(odes, sol1, t_interval, nE, tau_lag):
     
-    M = sol1[:, 0]
-    L = sol1[:, 1]
-    for i in range(1, nE + 1):
-        locals()[f'Eg{i}'] = sol1[:, (2*i)]
-        locals()[f'El{i}'] = sol1[:, (1 + 2*i)]
-
-    # plot
-    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(10, 4))
-
-    g = 0.8/(2*nE)
-    for i in range(1, nE + 1):
-        axs[0].semilogy(t_interval1, locals()[f'Eg{i}']+locals()[f'El{i}'], color = (0, 0.8 - g*i, 0), label=f"E. coli strain {i}, lag time = {str(globals()[f'tau_lagE{i}'])}") ## note globals() usage
-
-    axs[0].set_title('Phase 1')
-    axs[0].set_ylabel('log(Eg + El)')
-    axs[0].set_xlabel('Time')
-    axs[0].legend(loc='lower left')
+    init_cond = [sol1[:, 0][-1], sol1[:, 1][-1]]
+    for i in range(1, nE + 1): ## could maybe use list comp
+        init_cond += [sol1[:, (2*i)][-1], sol1[:, (1 + 2*i)][-1]]
+    print(f'Running phase 2: no antibiotic, with {init_cond}')
     
-    axs01 = axs[0].twinx()
-    
-    axs01.plot(t_interval1, M, label='methionine')
-    axs01.plot(t_interval1, L, label='lactose')
+    sol = odeint(odes, init_cond, t_interval, args=(0, nE, tau_lag))
+    return sol
 
-    
-    axs01.set_ylim(0, max([init_M, init_L]))
+### general matplotlib plot function
+def solplot(sols, t_intervals):
+    '''
+    sols:list of solutions for each phase
+    t_intervals:list of t_intervals respective to sols
+    '''
+    fig, axs = plt.subplots(nrows=1, ncols=len(sols), figsize=(10, 4))
 
-    axs01.set_ylabel('Amount of Nutrients')
-    axs01.legend(loc='lower left', bbox_to_anchor=(0, 0.22))
-
-    tlim2 = 15 #
-    init_cond2 = [M[-1], L[-1]]
-    for i in range(1, nE + 1): ## list comp?
-        init_cond2 += [locals()[f'Eg{i}'][-1], locals()[f'El{i}'][-1]]
+    for s in range(len(sols)):
+        sol = sols[s]
         
-    # phase 2
-    print('Running phase 2: antibiotic absent. Growth rate = maximum growth rate * 1')
-    print('Initial conditions (phase 1 final conditions):')
-    print(f'M: {M[-1]}')
-    print(f'L: {L[-1]}')
-    for i in range(1, nE + 1):
-        print(f"Eg{i}: {locals()[f'Eg{i}'][-1]}")
-        print(f"El{i}: {locals()[f'El{i}'][-1]}")
+        nE = (len(sol[0, :]) - 2)//2
+        
+        locals()[f'M{s}'] = sol[:, 0]
+        locals()[f'L{s}'] = sol[:, 1]
+        for i in range(1, nE + 1):
+            locals()[f'Eg{i}{s}'] = sol[:, (2*i)]
+            locals()[f'El{i}{s}'] = sol[:, (1 + 2*i)]
 
-    t_interval2 = np.linspace(0, tlim2, 1000)
-    sol2 = run_phase2(odes, init_cond2, t_interval2, nE, tau_lag)
-    
-    M = sol2[:, 0]
-    L = sol2[:, 1]
-    for i in range(1, nE + 1):
-        locals()[f'Eg{i}'] = sol2[:, (2*i)]
-        locals()[f'El{i}'] = sol2[:, (1 + 2*i)]
+        g = 0.8/(2*nE)
+        for i in range(1, nE + 1):
+            axs[s].semilogy(t_intervals[s], locals()[f'Eg{i}{s}']+locals()[f'El{i}{s}'], color = (0, 0.8 - g*i, 0), label=f"E. coli strain {i}, lag time = {str(globals()[f'tau_lagE{i}'])}") ## note globals() usage
 
-    # plot
-    g = 0.8/(2*nE)
-    for i in range(1, nE + 1):
-        axs[1].semilogy(t_interval2, locals()[f'Eg{i}']+locals()[f'El{i}'], color = (0, 0.8 - g*i, 0), label=f"E. coli strain {i}, lag time = {str(globals()[f'tau_lagE{i}'])}") ## note globals() usage
+        axs[s].set_ylabel('log(Eg + El)')
+        axs[s].set_xlabel('Time')
+        
+        locals()[f'axs{s}1'] = axs[s].twinx()
+        
+        locals()[f'axs{s}1'].plot(t_intervals[s], locals()[f'M{s}'], label='methionine')
+        locals()[f'axs{s}1'].plot(t_intervals[s], locals()[f'L{s}'], label='lactose')
+        
+        locals()[f'axs{s}1'].set_ylim(0, max([max(locals()[f'M{s}']), max(locals()[f'L{s}'])]))
 
-    axs[1].set_title('Phase 2')
-    axs[1].set_ylabel('log(Eg + El)')
-    axs[1].set_xlabel('Time')
-    
-    axs11 = axs[1].twinx()
-    
-    axs11.plot(t_interval2, M, label='methionine')
-    axs11.plot(t_interval2, L, label='lactose')
-    
-    axs11.set_ylabel('Amount of Nutrients')
+        locals()[f'axs{s}1'].set_ylabel('Amount of Nutrients')
 
-    axs11.set_ylim(0, max([init_M, init_L]))
+        if s == 0: ## some hard code for titles and legends
+            axs[s].set_title('Phase 1')
+            axs[s].legend(loc='lower left')
+            locals()[f'axs{s}1'].legend(loc='lower left', bbox_to_anchor=(0, 0.22))
+        else:
+            axs[s].set_title('Phase 2')
 
     fig.tight_layout()
     plt.show()
-    
-start(1, 1)
 
+### run regular: observe as is
+def regular(init_M, init_L, Ta, nE=1, tau_lag_inp=None):
+    '''
+    init_M: initial methionine concentration
+    init_L: initial lactose concentration
+    Ta: length of phase 1
+    tau_lag: lag time, shared by all strains; or (default) lag time for each strain is a random value between 0 and 12 inclusive
+    '''
+    if tau_lag_inp == None:
+        tau_lag = [random.uniform(0, 12) for i in range(nE)]
+    else:
+        tau_lag = [tau_lag_inp for i in range(nE)]
+        
+    init_cond = [init_M, init_L] + [0, 1]*nE # each strain starts with growing population 0 and lagging population 1
+
+    # phase 1
+    t_interval1 = np.linspace(0, Ta, 1000)
+    t_interval2 = np.linspace(0, 15, 1000)#
+    
+    solplot([run_phase1(odes, init_cond, t_interval1, nE, tau_lag), run_phase2(odes, run_phase1(odes, init_cond, t_interval1, nE, tau_lag), t_interval2, nE, tau_lag)], [t_interval1, t_interval2])
+    
+### run optimized: adapted to Fridman analysis
+###
+regular(10, 10, 6, nE=3)
