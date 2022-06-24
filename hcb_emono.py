@@ -70,18 +70,14 @@ def odes(x, t, alpha, nE, tau_lag, frid=False):
 ###
 
 ### phase 1: antibiotic
-def run_phase1(odes, init_cond, t_interval, nE, tau_lag, frid=False):
-    
-    sol = odeint(odes, init_cond, t_interval, args=(2, nE, tau_lag, frid)) ## when alpha = -2, effective growth rate = -r
-    para = [t_interval, nE, tau_lag]
-    return sol, para
+def run_phase(odes, init_cond, t_interval, nE, tau_lag, frid=False, phase=1):
 
-### phase 2: no antibiotic
-def run_phase2(odes, sol1, t_interval, nE, tau_lag, frid=False):
+    if phase == 1:
+        alpha = 2
+    elif phase == 2:
+        alpha = 0
     
-    init_cond = sol1[-1, :] ## array not list
-    
-    sol = odeint(odes, init_cond, t_interval, args=(0, nE, tau_lag, frid))
+    sol = odeint(odes, init_cond, t_interval, args=(alpha, nE, tau_lag, frid)) ## when alpha = -2, effective growth rate = -r
     para = [t_interval, nE, tau_lag]
     return sol, para
 
@@ -158,10 +154,10 @@ def regular(init_M, init_L, Ta, nE=1, tau_lag=None, frid=False):
 
     # run phases
     print(f'Running phase 1: antibiotic, with {init_cond}')
-    sol1, para1 = run_phase1(odes, init_cond, t_interval1, nE, tau_lag)
+    sol1, para1 = run_phase(odes, init_cond, t_interval1, nE, tau_lag)
 
     print(f'Running phase 2: no antibiotic, with {sol1[-1, :]}')
-    sol2, para2 = run_phase2(odes, sol1, t_interval2, nE, tau_lag, frid=frid)
+    sol2, para2 = run_phase(odes, sol1[-1, :], t_interval2, nE, tau_lag, frid=frid, phase=2)
 
     #plot
     solplot([sol1, sol2], [para1, para2])
@@ -193,15 +189,17 @@ def taus(init_M, init_L, Ta, nE=1, taulim=12, plot=True):
     for tau in taus:
         tau_lag = [tau for i in range(1, nE + 1)]
         
-        sol1, para1 = run_phase1(odes, init_cond, t_interval1, nE, tau_lag)
-        sol2, para2 = run_phase2(odes, sol1, t_interval2, nE, tau_lag, frid=True)
+        sol1, para1 = run_phase(odes, init_cond, t_interval1, nE, tau_lag)
+        sol2, para2 = run_phase(odes, sol1[-1, :], t_interval2, nE, tau_lag, frid=True, phase=2)
         for i in range(1, nE + 1):
             locals()[f'total{i}'] = sol2[:, (2*i)] + sol2[:, (1 + 2*i)]
+
+        # append to n_0
         for i in range(1, nE + 1):
             locals()[f'n_0{i}'].append((math.e)**-tlim * (locals()[f'total{i}'][-1])) ## calculate n*0 using the last t value available (== tlim2)
 
+    # plot
     if plot:     
-        # plot
         g = 0.8/(2*nE)
         for i in range(1, nE + 1):
             plt.plot(taus, locals()[f'n_0{i}'], color = (0, 0.8 - g*i, 0), label=f'E. coli strain {i}, lag time = equal')
@@ -231,7 +229,6 @@ def threed(init_M, init_L, nE=1, taulim=12, Talim=12):
 ### user interface
 inp = input("Run Sydney's test track (s) or run custom (c)?: ").strip()
 if inp == 's':
-    '''
     print('Running regular(10, 10, 6, tau_lag=[3,6,9]). Initial methionine: 1; initial lactose: 1; Ta: 6; strains: 3; tau_lag: 3, 6, 9.')
     regular(10, 10, 6, tau_lag=[3,6,9])
     print('Running regular(10, 10, 6, nE=3). Initial methionine: 1; initial lactose: 1; Ta: 6; strains: 3; tau_lag: random.')
@@ -244,7 +241,6 @@ if inp == 's':
     print(taus(10, 10, 6, nE=5))
     print('Running taus(100, 100, 6, nE=3).')
     print(taus(100, 100, 6, nE=3))
-    '''
     print('Running threed(10, 10, nE=3) and threed(100, 100, nE=3)')
     fig = plt.figure()
     ax = fig.add_subplot()
