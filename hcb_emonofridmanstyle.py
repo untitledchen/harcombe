@@ -129,5 +129,3 @@ plt.ylabel('n*0')
 plt.xlabel('tau_lag')
 
 plt.show()
-
-plt.show()
