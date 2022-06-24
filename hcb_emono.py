@@ -29,10 +29,10 @@ def odes(x, t, alpha, nE, tau_lag):
     # E
     for i in range(1, nE + 1):
 
-        # constants
+        # growth constants
         locals()[f'rE{i}'] = 1 #
         locals()[f'kE{i}'] = 5e-9 #
-        globals()[f'tau_lagE{i}'] = tau_lag[i - 1]
+        locals()[f'tau_lagE{i}'] = tau_lag[i - 1]
         
         # resource constants
         locals()[f'cM{i}'] = 0.1 #
@@ -43,8 +43,8 @@ def odes(x, t, alpha, nE, tau_lag):
         locals()[f'El{i}'] = x[1 + 2*i]
 
         # differential equations
-        locals()[f'dEg{i}dt'] = (1 - alpha)*locals()[f'rE{i}']*locals()[f'Eg{i}']*(M/(M+K_M))*(L/(L+K_L)) - locals()[f'kE{i}']*locals()[f'Eg{i}'] + locals()[f'El{i}']/globals()[f'tau_lagE{i}'] ## note globals() usage
-        locals()[f'dEl{i}dt'] = -locals()[f'El{i}']/globals()[f'tau_lagE{i}'] ## note globals() usage
+        locals()[f'dEg{i}dt'] = (1 - alpha)*locals()[f'rE{i}']*locals()[f'Eg{i}']*(M/(M+K_M))*(L/(L+K_L)) - locals()[f'kE{i}']*locals()[f'Eg{i}'] + locals()[f'El{i}']/locals()[f'tau_lagE{i}']
+        locals()[f'dEl{i}dt'] = -locals()[f'El{i}']/locals()[f'tau_lagE{i}']
 
     # M
     sigma_cM = 0
@@ -73,7 +73,8 @@ def run_phase1(odes, init_cond, t_interval, nE, tau_lag):
     print(f'Running phase 1: antibiotic, with {init_cond}')
     
     sol = odeint(odes, init_cond, t_interval, args=(2, nE, tau_lag)) ## when alpha = -2, effective growth rate = -r
-    return sol
+    para = [t_interval, nE, tau_lag]
+    return sol, para
 
 ### phase 2: no antibiotic
 def run_phase2(odes, sol1, t_interval, nE, tau_lag):
@@ -84,10 +85,11 @@ def run_phase2(odes, sol1, t_interval, nE, tau_lag):
     print(f'Running phase 2: no antibiotic, with {init_cond}')
     
     sol = odeint(odes, init_cond, t_interval, args=(0, nE, tau_lag))
-    return sol
+    para = [t_interval, nE, tau_lag]
+    return sol, para
 
 ### general matplotlib plot function
-def solplot(sols, t_intervals):
+def solplot(sols, paras):
     '''
     sols:list of solutions for each phase
     t_intervals:list of t_intervals respective to sols
@@ -96,8 +98,14 @@ def solplot(sols, t_intervals):
 
     for s in range(len(sols)):
         sol = sols[s]
+
+        # read in parameters
+        t_interval = paras[s][0]
+        nE = paras[s][1]
+        tau_lag = paras[s][2]
         
-        nE = (len(sol[0, :]) - 2)//2
+        # set left axis (nutrients) ylim to highest initial M or L overall (phase 1)
+        nutr_ylim = max([max(sols[0][:, 0]), max(sols[0][:, 1])])
         
         locals()[f'M{s}'] = sol[:, 0]
         locals()[f'L{s}'] = sol[:, 1]
@@ -107,17 +115,17 @@ def solplot(sols, t_intervals):
 
         g = 0.8/(2*nE)
         for i in range(1, nE + 1):
-            axs[s].semilogy(t_intervals[s], locals()[f'Eg{i}{s}']+locals()[f'El{i}{s}'], color = (0, 0.8 - g*i, 0), label=f"E. coli strain {i}, lag time = {str(globals()[f'tau_lagE{i}'])}") ## note globals() usage
+            axs[s].semilogy(t_interval, locals()[f'Eg{i}{s}']+locals()[f'El{i}{s}'], color = (0, 0.8 - g*i, 0), label=f'E. coli strain {i}, lag time = {str(tau_lag[i - 1])}')
 
         axs[s].set_ylabel('log(Eg + El)')
         axs[s].set_xlabel('Time')
         
         locals()[f'axs{s}1'] = axs[s].twinx()
         
-        locals()[f'axs{s}1'].plot(t_intervals[s], locals()[f'M{s}'], label='methionine')
-        locals()[f'axs{s}1'].plot(t_intervals[s], locals()[f'L{s}'], label='lactose')
+        locals()[f'axs{s}1'].plot(t_interval, locals()[f'M{s}'], label='methionine')
+        locals()[f'axs{s}1'].plot(t_interval, locals()[f'L{s}'], label='lactose')
         
-        locals()[f'axs{s}1'].set_ylim(0, max([max(locals()[f'M{s}']), max(locals()[f'L{s}'])]))
+        locals()[f'axs{s}1'].set_ylim(0, nutr_ylim)
 
         locals()[f'axs{s}1'].set_ylabel('Amount of Nutrients')
 
@@ -144,13 +152,19 @@ def regular(init_M, init_L, Ta, nE=1, tau_lag_inp=None):
     else:
         tau_lag = [tau_lag_inp for i in range(nE)]
         
-    init_cond = [init_M, init_L] + [0, 1]*nE # each strain starts with growing population 0 and lagging population 1
+    init_cond = [init_M, init_L] + [0, 1]*nE ## each strain starts with growing population 0 and lagging population 1
 
-    # phase 1
+    # time intervals
     t_interval1 = np.linspace(0, Ta, 1000)
-    t_interval2 = np.linspace(0, 15, 1000)#
+    t_interval2 = np.linspace(0, 15, 1000) #
+
+    # run phases
+    sol1, para1 = run_phase1(odes, init_cond, t_interval1, nE, tau_lag)
     
-    solplot([run_phase1(odes, init_cond, t_interval1, nE, tau_lag), run_phase2(odes, run_phase1(odes, init_cond, t_interval1, nE, tau_lag), t_interval2, nE, tau_lag)], [t_interval1, t_interval2])
+    sol2, para2 = run_phase2(odes, sol1, t_interval2, nE, tau_lag)
+
+    #plot
+    solplot([sol1, sol2], [para1, para2])
     
 ### run optimized: adapted to Fridman analysis
 ###
