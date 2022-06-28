@@ -218,7 +218,7 @@ def threed(init_M, init_L, nE=1, taulim=12, Talim=12):
 
     opt_taus = []
     for Ta in Tas:
-        opt_taus.append(taus(init_M, init_L, Ta, nE=1, taulim=12, plot=False)[1])
+        opt_taus.append(taus(init_M, init_L, Ta, nE, taulim, plot=False)[1])
 
     # plot
     plt.plot(Tas, opt_taus, label=f'init_M: {init_M} init_L: {init_L}')
@@ -241,11 +241,11 @@ if inp == 's':
     print(taus(10, 10, 6, nE=5))
     print('Running taus(100, 100, 6, nE=3).')
     print(taus(100, 100, 6, nE=3))
-    print('Running threed(10, 10, nE=3) and threed(100, 100, nE=3)')
+    print('Running threed(10, 10, nE=3, taulim=14) and threed(100, 100, nE=3, taulim=14)')
     fig = plt.figure()
     ax = fig.add_subplot()
-    threed(10, 10, nE=3)
-    threed(100, 100, nE=3)
+    threed(10, 10, nE=3, taulim=14)
+    threed(100, 100, nE=3, taulim=14)
     ax.set_aspect('equal', adjustable='box')
     plt.legend()
     plt.show()
