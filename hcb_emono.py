@@ -12,7 +12,7 @@ def odes(x, t, alpha, nE, tau_lag, frid=False):
     t: list of times
     alpha: additional death rate due to antibiotic, as a proportion of max growth rate r
     nE: number of strains of E. coli
-    tau_lag: list of lag times of each strain # all identical for now
+    tau_lag: list of lag times of each strain
     frid: when True, dMdt and dLdt = 0 (for use with Fridman-style analysis)
     '''
     
@@ -39,7 +39,7 @@ def odes(x, t, alpha, nE, tau_lag, frid=False):
         locals()[f'cM{i}'] = 0.1 #
         locals()[f'cL{i}'] = 1.0 #
 
-        # solutions -- starting with Eg1 on x[3] and El1 on x[4], Eg and El occupy alternating indexes for each strain
+        # solutions -- starting with Eg1 on x[2] and El1 on x[3], Eg and El occupy alternating indexes for each strain
         locals()[f'Eg{i}'] = x[2*i]
         locals()[f'El{i}'] = x[1 + 2*i]
 
@@ -69,7 +69,7 @@ def odes(x, t, alpha, nE, tau_lag, frid=False):
     return to_return
 ###
 
-### phase 1: antibiotic
+### run_phase 1 (antibiotic) or 2 (no antibiotic)
 def run_phase(odes, init_cond, t_interval, nE, tau_lag, frid=False, phase=1):
 
     if phase == 1:
@@ -168,8 +168,9 @@ def taus(init_M, init_L, Ta, nE=1, taulim=12, plot=True):
     init_M: initial methionine concentration
     init_L: initial lactose concentration
     Ta: length of phase 1
+    
     taulim: limit of tau_lags to try
-    3d: switch to recreating graph 3d in Fridman main paper
+    plot: when False, will not plot
 
     returns:list of max n*0, opt tau_lag
     '''
@@ -196,7 +197,7 @@ def taus(init_M, init_L, Ta, nE=1, taulim=12, plot=True):
 
         # append to n_0
         for i in range(1, nE + 1):
-            locals()[f'n_0{i}'].append((math.e)**-tlim * (locals()[f'total{i}'][-1])) ## calculate n*0 using the last t value available (== tlim2)
+            locals()[f'n_0{i}'].append((math.e)**-tlim * (locals()[f'total{i}'][-1])) ## calculate n*0 using the last t value available (== tlim)
 
     # plot
     if plot:     
@@ -229,9 +230,9 @@ def threed(init_M, init_L, nE=1, taulim=12, Talim=12):
 ### user interface
 inp = input("Run Sydney's test track (s) or run custom (c)?: ").strip()
 if inp == 's':
-    print('Running regular(10, 10, 6, tau_lag=[3,6,9]). Initial methionine: 1; initial lactose: 1; Ta: 6; strains: 3; tau_lag: 3, 6, 9.')
+    print('Running regular(10, 10, 6, tau_lag=[3,6,9]). Initial methionine: 10; initial lactose: 10; Ta: 6; strains: 3; tau_lag: 3, 6, 9.')
     regular(10, 10, 6, tau_lag=[3,6,9])
-    print('Running regular(10, 10, 6, nE=3). Initial methionine: 1; initial lactose: 1; Ta: 6; strains: 3; tau_lag: random.')
+    print('Running regular(10, 10, 6, nE=3). Initial methionine: 10; initial lactose: 10; Ta: 6; strains: 3; tau_lag: random.')
     regular(10, 10, 6, nE=3)
     print('Running regular(10, 10, 6, nE=3, frid=True). Same parameters but phase 2 is adapted for Fridman analysis.')
     regular(10, 10, 6, nE=3, frid=True)
