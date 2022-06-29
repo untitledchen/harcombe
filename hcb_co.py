@@ -311,7 +311,7 @@ if inp == 's':
     print(taus(10, 10, 10, 6, n=[3,1]))
     print('Running taus(10, 10, 10, 6, n=[5,1]).')
     print(taus(10, 10, 10, 6, n=[5,1]))
-    print('Running taus(100, 100, 6, n=[3,1]).')
+    print('Running taus(100, 100, 100, 6, n=[3,1]).')
     print(taus(100, 100, 100, 6, n=[3,1]))
     '''
     print('Running threed(10, 10, 10, n=[3,1], taulim=14) and threed(100, 100, 100, n=[3,1], taulim=12)')
