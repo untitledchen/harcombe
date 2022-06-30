@@ -289,15 +289,18 @@ def taus(init_M, init_A, init_L, Ta, n=[1,1], taulim=12, plot=True):
 
 ## editing up to here
 ### run 3d: Fridman analysis pt 2
-def threed(init_M, init_A, init_L, n=[1,1], taulim=12, Talim=12):
+def threed(init_M, init_A, init_L, n=[1,1], taulim=12, Talim=12, colors=None): ## colors is a temporary fix because its 10:27pm
     Tas = [Ta for Ta in range(1, Talim + 1)] # list of Tas to try, whole numbers only
 
-    opt_taus = []
+    opt_tausE = []
+    opt_tausS = []
     for Ta in Tas:
-        opt_taus.append(taus(init_M, init_A, init_L, Ta, n, taulim, plot=False)[1])
+        opt_tausE.append(taus(init_M, init_A, init_L, Ta, n, taulim, plot=False)[0][1])
+        opt_tausS.append(taus(init_M, init_A, init_L, Ta, n, taulim, plot=False)[1][1])
 
-    # plot
-    plt.plot(Tas, opt_taus, label=f'init_M: {init_M} init_A: {init_A} init_L: {init_L}')
+    # plot     
+    plt.plot(Tas, opt_tausE, color = colors[0], label=f'E. init_M: {init_M} init_A: {init_A} init_L: {init_L}')
+    plt.plot(Tas, opt_tausS, color = colors[1], label=f'S. init_M: {init_M} init_A: {init_A} init_L: {init_L}')
 
     plt.ylabel('Optimal tau_lag')
     plt.xlabel('Ta')
@@ -313,16 +316,15 @@ if inp == 's':
     print(taus(10, 10, 10, 6, n=[5,1]))
     print('Running taus(100, 100, 100, 6, n=[3,1]).')
     print(taus(100, 100, 100, 6, n=[3,1]))
-    '''
     print('Running threed(10, 10, 10, n=[3,1], taulim=14) and threed(100, 100, 100, n=[3,1], taulim=12)')
     fig = plt.figure()
     ax = fig.add_subplot()
-    threed(10, 10, 10, n=[3,1], taulim=14)
-    threed(100, 100, 100, n=[3,1], taulim=12)
+    threed(10, 10, 10, n=[3,1], taulim=14, colors=['lightgreen', 'lightblue'])
+    threed(100, 100, 100, n=[3,1], taulim=12, colors=['darkgreen', 'royalblue'])
     ax.set_aspect('equal', adjustable='box')
-    plt.legend()
+    plt.legend(loc='upper left', bbox_to_anchor=(0, 1))
+    fig.tight_layout()
     plt.show()
-    '''
     
 elif inp == 'c':
     pass
