@@ -287,7 +287,6 @@ def taus(init_M, init_A, init_L, Ta, n=[1,1], taulim=12, plot=True):
         
     return [[max(n_0E), taus[n_0E.index(max(n_0E))]], [max(n_0S), taus[n_0S.index(max(n_0S))]]]
 
-## editing up to here
 ### run 3d: Fridman analysis pt 2
 def threed(init_M, init_A, init_L, n=[1,1], taulim=12, Talim=12, colors=None): ## colors is a temporary fix because its 10:27pm
     Tas = [Ta for Ta in range(1, Talim + 1)] # list of Tas to try, whole numbers only
