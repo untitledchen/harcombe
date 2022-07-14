@@ -166,10 +166,10 @@ def solplot(sols, paras):
 
         g = 0.8/(2*nE)
         for i in range(1, nE + 1):
-            axs[s].semilogy(t_interval, locals()[f'Eg{i}{s}']+locals()[f'El{i}{s}'], color = (0, 0.8 - g*i, 0), label=f'E. coli strain {i}, lag time = {str(tau_lag[0][i - 1])}')
+            axs[s].plot(t_interval, np.log10(locals()[f'Eg{i}{s}']+locals()[f'El{i}{s}']), color = (0, 0.8 - g*i, 0), label=f'E. coli strain {i}, lag time = {str(tau_lag[0][i - 1])}')
         b = 0.8/(2*nS)
         for j in range(1, nS + 1):
-            axs[s].semilogy(t_interval, locals()[f'Sg{j}{s}']+locals()[f'Sl{j}{s}'], color = (0, 0, 0.8 - b*j), label=f'S. enterica strain {j}, lag time = {str(tau_lag[1][j - 1])}')
+            axs[s].plot(t_interval, np.log10(locals()[f'Sg{j}{s}']+locals()[f'Sl{j}{s}']), color = (0, 0, 0.8 - b*j), label=f'S. enterica strain {j}, lag time = {str(tau_lag[1][j - 1])}')
 
         axs[s].set_ylabel('log(g + l)')
         axs[s].set_xlabel('Time')

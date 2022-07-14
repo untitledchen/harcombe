@@ -108,7 +108,7 @@ def solplot(sols, paras):
 
         g = 0.8/(2*nE)
         for i in range(1, nE + 1):
-            axs[s].semilogy(t_interval, locals()[f'Eg{i}{s}']+locals()[f'El{i}{s}'], color = (0, 0.8 - g*i, 0), label=f'E. coli strain {i}, lag time = {str(tau_lag[i - 1])}')
+            axs[s].plot(t_interval, np.log10(locals()[f'Eg{i}{s}']+locals()[f'El{i}{s}']), color = (0, 0.8 - g*i, 0), label=f'E. coli strain {i}, lag time = {str(tau_lag[i - 1])}')
 
         axs[s].set_ylabel('log(Eg + El)')
         axs[s].set_xlabel('Time')
