@@ -151,9 +151,6 @@ def solplot(sols, paras):
         nE = n[0]
         nS = n[1]
         
-        # set left axis (nutrients) ylim to highest initial M, A, or L overall (phase 2)
-        nutr_ylim = max([max(sols[1][:, 0]), max(sols[1][:, 1]), max(sols[1][:, 2])])
-        
         locals()[f'M{s}'] = sol[:, 0]
         locals()[f'A{s}'] = sol[:, 1]
         locals()[f'L{s}'] = sol[:, 2]
@@ -180,6 +177,7 @@ def solplot(sols, paras):
             freqsS = (locals()[f'Sg{j}{s}']+locals()[f'Sl{j}{s}'])/totals
             axs[0][s].plot(t_interval, np.log10(freqsS), color = (0, 0, 0.8 - b*j), label=f'S. enterica strain {j}, lag time = {str(tau_lag[1][j - 1])}')
 
+        axs[0][s].set_ylim(-1.2, -0.4) # hard-coding ylim
         axs[0][s].set_ylabel('log(g + l)')
         axs[0][s].set_xlabel('Time')
         
@@ -187,7 +185,7 @@ def solplot(sols, paras):
         axs[1][s].plot(t_interval, locals()[f'A{s}'], label='acetate', color='r')
         axs[1][s].plot(t_interval, locals()[f'L{s}'], label='lactose', color='y')
 
-        axs[1][s].set_ylim(0, nutr_ylim)
+        axs[1][s].set_ylim(0, 20) #hard-coding ylim
         axs[1][s].set_ylabel('Amount of Nutrients')
 
         if s == 0: ## some hard code for titles and legends
@@ -216,7 +214,7 @@ def regular(init_M, init_A, init_L, Ta, tau_lag=None, n=[1,1], frid=False):
     else:
         n = [len(tau_lag[0]), len(tau_lag[1])]
         
-    init_cond = [init_M, init_A, init_L] + [0, 1]*(n[0] + n[1]) ## each strain for each species starts with growing population 0 and lagging population 1
+    init_cond = [init_M, init_A, init_L] + [0, 1/(n[0] + n[1])]*(n[0] + n[1]) ## each strain for each species starts with growing population 0 and lagging population 1
 
     # time intervals
     t_interval1 = np.linspace(0, Ta, 1000)

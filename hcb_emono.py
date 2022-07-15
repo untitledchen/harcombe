@@ -113,23 +113,26 @@ def solplot(sols, paras):
         for i in range(1, nE + 1):
             freqs = (locals()[f'Eg{i}{s}']+locals()[f'El{i}{s}'])/totals
             axs[0][s].plot(t_interval, np.log10(freqs), color = (0, 0.8 - g*i, 0), label=f'E. coli strain {i}, lag time = {str(tau_lag[i - 1])}')
-
-        axs[0][s].set_ylabel('log(Eg + El)')
-        axs[0][s].set_xlabel('Time')
         
         axs[1][s].plot(t_interval, locals()[f'M{s}'], label='methionine')
         axs[1][s].plot(t_interval, locals()[f'L{s}'], label='lactose')
-        
-        axs[1][s].set_ylabel('Amount of Nutrients')
+
+        axs[1][s].set_ylim(0, 10.1) #
 
         if s == 0: ## some hard code for titles and legends
             axs[0][s].set_title('Phase 1')
+
+            axs[0][s].set_ylabel('log(Eg + El)')
+            axs[1][s].set_ylabel('Amount of Nutrients')
+            axs[1][s].set_xlabel('Time')
+            
+            
             axs[0][s].legend(loc='lower left')
             axs[1][s].legend(loc='lower left')
         else:
             axs[0][s].set_title('Phase 2')
+            axs[1][s].set_xlabel('Time')
 
-    #fig.tight_layout()
     plt.show()
 
 ### run regular: observe as is
@@ -146,7 +149,7 @@ def regular(init_M, init_L, Ta, nE=1, tau_lag=None, frid=False):
     else:
         nE = len(tau_lag)
         
-    init_cond = [init_M, init_L] + [0, 1]*nE ## each strain starts with growing population 0 and lagging population 1
+    init_cond = [init_M, init_L] + [0, 1/nE]*nE ## each strain starts with growing population 0 and lagging population 1
 
     # time intervals
     t_interval1 = np.linspace(0, Ta, 1000)
@@ -177,7 +180,7 @@ def taus(init_M, init_L, Ta, nE=1, taulim=12, plot=True):
     tlim = 15 #
 
     taus = np.linspace(0, taulim, 100)[1:] ## lowered accuracy with 100 instead of 1000 for speed
-    init_cond = [init_M, init_L] + [0, 1]*nE ## each strain starts with growing population 0 and lagging population 1
+    init_cond = [init_M, init_L] + [0, 1/nE]*nE ## each strain starts with growing population 0 and lagging population 1
 
     # time intervals
     t_interval1 = np.linspace(0, Ta, 1000)
@@ -238,8 +241,6 @@ if inp == 's':
     regular(10, 10, 6, nE=3, frid=True)
     print('Running taus(10, 10, 6, nE=3). Returns max n*0 and optimal tau_lag, respectively.')
     print(taus(10, 10, 6, nE=3))
-    print('Running taus(10, 10, 6, nE=5).')
-    print(taus(10, 10, 6, nE=5))
     print('Running taus(100, 100, 6, nE=3).')
     print(taus(100, 100, 6, nE=3))
     print('Running threed(10, 10, nE=3, taulim=14) and threed(100, 100, nE=3, taulim=14)')
@@ -252,4 +253,13 @@ if inp == 's':
     plt.show()
     
 elif inp == 'c':
-    pass
+    '''
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    threed(10, 10, nE=3, taulim=14)
+    threed(20, 20, nE=3, taulim=14)
+    threed(50, 50, nE=3, taulim=14)
+    threed(100, 100, nE=3, taulim=14)
+    plt.legend()
+    plt.show()
+    '''
