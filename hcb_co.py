@@ -138,7 +138,7 @@ def solplot(sols, paras):
     sols:list of solutions for each phase
     paras:list of parameters for each phase [t_interval, tau_lag, n]
     '''
-    fig, axs = plt.subplots(nrows=1, ncols=len(sols), figsize=(10, 4))
+    fig, axs = plt.subplots(nrows=2, ncols=2, figsize=(10, 6))
 
     for s in range(len(sols)):
         sol = sols[s]
@@ -174,31 +174,28 @@ def solplot(sols, paras):
         g = 0.8/(1.5*nE)
         for i in range(1, nE + 1):
             freqsE = (locals()[f'Eg{i}{s}']+locals()[f'El{i}{s}'])/totals
-            axs[s].plot(t_interval, np.log10(freqsE), color = (0, 0.8 - g*i, 0), label=f'E. coli strain {i}, lag time = {str(tau_lag[0][i - 1])}')
+            axs[0][s].plot(t_interval, np.log10(freqsE), color = (0, 0.8 - g*i, 0), label=f'E. coli strain {i}, lag time = {str(tau_lag[0][i - 1])}')
         b = 0.8/(1.5*nS)
         for j in range(1, nS + 1):
             freqsS = (locals()[f'Sg{j}{s}']+locals()[f'Sl{j}{s}'])/totals
-            axs[s].plot(t_interval, np.log10(freqsS), color = (0, 0, 0.8 - b*j), label=f'S. enterica strain {j}, lag time = {str(tau_lag[1][j - 1])}')
+            axs[0][s].plot(t_interval, np.log10(freqsS), color = (0, 0, 0.8 - b*j), label=f'S. enterica strain {j}, lag time = {str(tau_lag[1][j - 1])}')
 
-        axs[s].set_ylabel('log(g + l)')
-        axs[s].set_xlabel('Time')
+        axs[0][s].set_ylabel('log(g + l)')
+        axs[0][s].set_xlabel('Time')
         
-        locals()[f'axs{s}1'] = axs[s].twinx()
-        
-        locals()[f'axs{s}1'].plot(t_interval, locals()[f'M{s}'], label='methionine', color='m')
-        locals()[f'axs{s}1'].plot(t_interval, locals()[f'A{s}'], label='acetate', color='r')
-        locals()[f'axs{s}1'].plot(t_interval, locals()[f'L{s}'], label='lactose', color='y')
-        
-        locals()[f'axs{s}1'].set_ylim(0, nutr_ylim)
+        axs[1][s].plot(t_interval, locals()[f'M{s}'], label='methionine', color='m')
+        axs[1][s].plot(t_interval, locals()[f'A{s}'], label='acetate', color='r')
+        axs[1][s].plot(t_interval, locals()[f'L{s}'], label='lactose', color='y')
 
-        locals()[f'axs{s}1'].set_ylabel('Amount of Nutrients')
+        axs[1][s].set_ylim(0, nutr_ylim)
+        axs[1][s].set_ylabel('Amount of Nutrients')
 
         if s == 0: ## some hard code for titles and legends
-            axs[s].set_title('Phase 1')
-            axs[s].legend(loc='lower left')
-            locals()[f'axs{s}1'].legend(loc='lower left', bbox_to_anchor=(0, 0.3))
+            axs[0][s].set_title('Phase 1')
+            axs[0][s].legend(loc='lower left')
+            axs[1][s].legend(loc='lower left')
         else:
-            axs[s].set_title('Phase 2')
+            axs[0][s].set_title('Phase 2')
 
     fig.tight_layout()
     plt.show()
