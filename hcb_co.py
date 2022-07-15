@@ -197,7 +197,6 @@ def solplot(sols, paras):
         else:
             axs[0][s].set_title('Phase 2')
 
-    fig.tight_layout()
     plt.show()
 
 ### run regular: observe as is
