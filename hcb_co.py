@@ -164,12 +164,21 @@ def solplot(sols, paras):
             locals()[f'Sg{j}{s}'] = sol[:, ((1 + 2*nE) + 2*j)]
             locals()[f'Sl{j}{s}'] = sol[:, ((2 + 2*nE) + 2*j)]
 
-        g = 0.8/(2*nE)
+        # create totals to convert absolute populations to frequencies of the total population, by creating totals and later freqs
+        totals = locals()[f'Eg1{s}'] + locals()[f'El1{s}'] + locals()[f'Sg1{s}'] + locals()[f'Sl1{s}']
+        for i in range(2, nE + 1):
+            totals += locals()[f'Eg{i}{s}'] + locals()[f'El{i}{s}']
+        for j in range(2, nS + 1):
+            totals += locals()[f'Sg{j}{s}'] + locals()[f'Sl{j}{s}']
+
+        g = 0.8/(1.5*nE)
         for i in range(1, nE + 1):
-            axs[s].plot(t_interval, np.log10(locals()[f'Eg{i}{s}']+locals()[f'El{i}{s}']), color = (0, 0.8 - g*i, 0), label=f'E. coli strain {i}, lag time = {str(tau_lag[0][i - 1])}')
-        b = 0.8/(2*nS)
+            freqsE = (locals()[f'Eg{i}{s}']+locals()[f'El{i}{s}'])/totals
+            axs[s].plot(t_interval, np.log10(freqsE), color = (0, 0.8 - g*i, 0), label=f'E. coli strain {i}, lag time = {str(tau_lag[0][i - 1])}')
+        b = 0.8/(1.5*nS)
         for j in range(1, nS + 1):
-            axs[s].plot(t_interval, np.log10(locals()[f'Sg{j}{s}']+locals()[f'Sl{j}{s}']), color = (0, 0, 0.8 - b*j), label=f'S. enterica strain {j}, lag time = {str(tau_lag[1][j - 1])}')
+            freqsS = (locals()[f'Sg{j}{s}']+locals()[f'Sl{j}{s}'])/totals
+            axs[s].plot(t_interval, np.log10(freqsS), color = (0, 0, 0.8 - b*j), label=f'S. enterica strain {j}, lag time = {str(tau_lag[1][j - 1])}')
 
         axs[s].set_ylabel('log(g + l)')
         axs[s].set_xlabel('Time')

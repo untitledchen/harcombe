@@ -106,9 +106,15 @@ def solplot(sols, paras):
             locals()[f'Eg{i}{s}'] = sol[:, (2*i)]
             locals()[f'El{i}{s}'] = sol[:, (1 + 2*i)]
 
-        g = 0.8/(2*nE)
+        # convert absolute populations to frequencies of the total population, by creating totals and later freqs
+        totals = locals()[f'Eg1{s}'] + locals()[f'El1{s}']
+        for i in range(2, nE + 1):
+            totals += locals()[f'Eg{i}{s}'] + locals()[f'El{i}{s}']
+        
+        g = 0.8/(1.5*nE)
         for i in range(1, nE + 1):
-            axs[s].plot(t_interval, np.log10(locals()[f'Eg{i}{s}']+locals()[f'El{i}{s}']), color = (0, 0.8 - g*i, 0), label=f'E. coli strain {i}, lag time = {str(tau_lag[i - 1])}')
+            freqs = (locals()[f'Eg{i}{s}']+locals()[f'El{i}{s}'])/totals
+            axs[s].plot(t_interval, np.log10(freqs), color = (0, 0.8 - g*i, 0), label=f'E. coli strain {i}, lag time = {str(tau_lag[i - 1])}')
 
         axs[s].set_ylabel('log(Eg + El)')
         axs[s].set_xlabel('Time')
