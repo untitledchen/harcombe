@@ -14,15 +14,38 @@ def make_null_function(chance_of_MIC_mutation, max_MIC_change, sd_s_change):
     return null_function
             
 ##### model_functions2.r
-def make_first_season(wells, n_species, current_prefixes, u=0.0025):
-    next_season = pd.Series()
-    for well in range(1, wells+1):
-        current_prefix = current_prefixes[well]
-        first_genotype = pd.Series([f'{current_prefix}_0', N, 1, 0, '0'], index=['name', 'n', 's', 'MIC', 'ancestors'])
 
-        species = pd.Series()
+# made class Species which is basically pd.Series but under a diff name
+class SpeciesType(pd.core.series.Series):
+    def __init__(self, data=None, index=None, dtype=None, name=None, copy=False, fastpath=False):
+        pd.core.series.Series.__init__(self, data, index, dtype, name, copy, fastpath)
+
+def Species(N=1000, u=0.001, first_genotype=None):
+    me = pd.Series([pd.Series(dtype=object), N, u], index=['genotypes', 'N', 'u'], dtype=object)
+
+    if type(first_genotype) != type(None): # avoiding ValueError "truth value of a Series is ambiguous"
+        if {'name', 'n', 's', 'MIC', 'ancestors'}.issubset(set(first_genotype.index)):
+            me['genotypes'][first_genotype['name']] = first_genotype
+        else:
+            print('All genotypes must contain the following fields: name (character), n (integer), s (number), MIC (number), ancestors (character)')
+            return 0
+
+    me = SpeciesType(me)##
+    return me
+
+def make_first_season(wells, n_species, current_prefixes, u=0.0025):
+    next_season = pd.Series(dtype=object)
+    for well in range(1, wells+1):
+        current_prefix = current_prefixes[well-1]
+        first_genotype = pd.Series([f'{current_prefix}_0', N, 1, 0, '0'], index=['name', 'n', 's', 'MIC', 'ancestors'])
+        
+        species = pd.Series(dtype=object)
         for k in range(1, n_species+1):
-            species[k] = Species(N, u, first_genotype) ##
+            species[f'{k}'] = Species(N, u, first_genotype)
+
+        next_season[f'{well}'] = species
+
+    return next_season
 
 ### simulation parameters
 reps = 5 # reps per treatment condition
@@ -64,6 +87,3 @@ for rep in range(1, reps+1):
         print('\tn_species', n_species)
 
         next_season = make_first_season(wells, n_species, current_prefixes, u = u)
-
-
-        
