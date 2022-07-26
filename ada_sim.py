@@ -10,7 +10,7 @@ def make_null_function(chance_of_MIC_mutation, max_MIC_change, sd_s_change):
         else:
             MIC = 0
             s = random.normalvariate(0, sd_s_change)
-        return [s, MIC]
+        return pd.Series([s, MIC])
     return null_function
             
 ##### model_functions2.r
@@ -61,6 +61,51 @@ def get_ancestors(Species):
         print('This method requires a SpeciesType object')
         return Species
 
+def get_mutants(Species):
+    if type(Species) == SpeciesType:
+        offspring = pd.Series([random.uniform(0,1) for i in range(Species['N'])])
+        mutants = pd.Series([i for i in offspring[offspring < Species['u']].index], dtype=object)
+        return mutants
+    else:
+        print('This method requires a SpeciesType object')
+        return Species
+
+def add_genotype(Species, new_genotype):
+    if type(Species) == SpeciesType:
+        Species['genotypes'][new_genotype['name']] = new_genotype
+        return Species
+    else:
+        print('This method requires a SpeciesType object')
+        return Species
+
+def set_n(Species, n):
+    if type(Species) == SpeciesType:
+        if sum(n) != Species['N']:
+            print(sum(n))
+            print('Sum of n != N defined in Species.')
+            return -1
+        for i in range(1, len(Species['genotypes'])):
+            Species['genotypes'][i]['n'] = n[i]
+        return Species
+    else:
+        print('This method requires a SpeciesType object')
+        return Species
+
+def make_mutants(Species, ancestor_genotype_names, new_genotype_names, mutant_function):
+    if type(Species) == SpeciesType:
+        if len(ancestor_genotype_names) == 0:
+            print('Must supply ancestor_genotype_names to make mutants')
+            return -1
+        for k in range(len(ancestor_genotype_names)):
+            ancestor_name = ancestor_genotype_names[k]
+            ancestor = Species['genotypes'][ancestor_name]
+            mutant = pd.Series({'name':new_genotype_names[k], 'n':1, 's':max([0, ancestor['s']+ mutant_function()[0]]), 'MIC':max([0, ancestor['s']+ mutant_function()[1]]), 'ancestors':ancestor_name+' '+ancestor['ancestors']})
+            Species = add_genotype(Species, mutant)
+            return Species
+    else:
+        print('This method requires a SpeciesType object')
+        return Species
+
 def make_first_season(wells, n_species, current_prefixes, u=0.0025):
     next_season = pd.Series(dtype=object)
     for well in range(1, wells+1):
@@ -81,33 +126,67 @@ def calculate_fitness(s, n, MIC, antibiotic):
     if all(s==0):
         print('All individuals have zero fitness')
         return -1
+    
     w = s/sum(s)*n
     w = w/sum(w)
     return w.cumsum()
 
+def birth_offspring(N, w):
+    chance = pd.Series([random.uniform(0,1) for i in range(N)])
+    return pd.Series([w[x < w].index[0] for x in chance]) ## differs from code in that starts w 0
+
 def run_one_simulation(species, gens, antibiotic, mutant_func, interdependent=True, current_prefix=''):
     n_species = len(species)
-    pop_sizes = [x['N'] for x in species]
+    pop_sizes = pd.Series([x['N'] for x in species])
 
     ## removed the len check
-    antibiotic = [antibiotic]*gens
+    antibiotic = pd.Series([antibiotic]*gens)
 
-    if interdependent: ##unchecked
-        if any([y == 0 for y in [len(x['genotypes']) for x in species]]):
+    if interdependent:
+        if any(pd.Series([len(x['genotypes']) for x in species]) == 0):
             for k in range(1, n_species+1):
                 results[f'{k}'] = pd.DataFrame({'gen':-1, 'genotypes':'-1', 'freq':-1, 's':-1, 'MIC':-1, 'ancestors':'-1'}, index=[0])
             return results
 
     results = pd.Series(dtype=object)
     for k in range(1, n_species+1):
-        results[f'{k}'] = pd.DataFrame({'gen':0, 'genotypes': species[f'{k}'], 'freq': [x/species[f'{k}']['N'] for x in get_n(species[f'{k}'])], 's': get_s(species[f'{k}']), 'MIC': get_MIC(species[f'{k}']), 'ancestors': get_ancestors(species[f'{k}'])}, index=[0])
-
+        results[f'{k}'] = pd.DataFrame({'gen':0, 'genotypes': [i for i in species[f'{k}']['genotypes'].index], 'freq': get_n(species[f'{k}'])/species[f'{k}']['N'], 's': get_s(species[f'{k}']), 'MIC': get_MIC(species[f'{k}']), 'ancestors': get_ancestors(species[f'{k}'])}, index=[0])
+    globals()['results'] = results#
     for gen in range(1, gens+1):
-        w = pd.Series(map(lambda x: calculate_fitness(get_s(x), get_n(x), get_MIC(x), antibiotic[gen-1]), species))
-        
+        w = pd.Series([calculate_fitness(get_s(k), get_n(k), get_MIC(k), antibiotic[gen-1]) for k in species])
         if interdependent:
-            pass
-            
+            if any(w.explode() == -1): ##
+                for k in range(1, n_species+1):
+                    results[f'{k}'] = pd.concat((results[f'{k}'], pd.DataFrame({'gen':-1, 'genotypes':'-1', 'freq':-1, 's':-1, 'MIC':-1, 'ancestors':'-1'}, index=[0])), ignore_index=True)
+                return results
+
+        offspring = pd.Series([birth_offspring(pop_sizes[k-1], w[k-1]) for k in range(1, n_species+1)], index=[f'{i}' for i in range(1, n_species+1)])
+        globals()['offspring'] = offspring#
+
+        mutants = pd.Series([get_mutants(x) for x in species], index=[i for i in species.index], dtype=object)
+        globals()['mutants'] = mutants#
+
+        for k in range(1, n_species+1):
+            if len(mutants[f'{k}']) > 0:
+                genotype_names = [i for i in species[f'{k}']['genotypes'].index]
+                max_genotype_name = max([int(x.split('_')[-1]) for x in genotype_names])
+
+                new_genotypes = [f'{current_prefix}_{max_genotype_name + i}' for i in range(1, len(mutants[f'{k}'])+1)]
+
+                ancestor_genotype_names = pd.Series([species[f'{k}']['genotypes'][offspring[f'{k}'][i]]['name'] for i in range(len(mutants[f'{k}']))])
+
+                species[f'{k}'] = make_mutants(species[f'{k}'], ancestor_genotype_names, new_genotypes, mutant_func)
+                offspring[f'{k}'][mutants[f'{k}']] = [len(genotype_names) + i for i in range(1, len(new_genotypes)+1)]
+
+        genotype_ns = pd.Series([[sum(offspring[f'{k}'] == x) for x in range(len(species[f'{k}']['genotypes']))] for k in range(1, n_species+1)])
+        species = pd.Series([set_n(species[f'{k}'], genotype_ns[k-1]) for k in range(1, n_species+1)])
+
+        for k in range(1, n_species+1):
+            print(k)
+            results[f'{k}'] = pd.concat((results[f'{k}'], pd.DataFrame({'gen':gen, 'genotypes':[i for i in species[f'{k}']['genotypes'].index], 'freq':get_n(species[f'{k}'])/species[f'{k}']['N'], 's':get_s(species[f'{k}']), 'MIC':get_MIC(species[f'{k}']), 'ancestors':get_ancestors(species[f'{k}'])}, index=[0])), ignore_index=True)
+
+    return results
+
 ### simulation parameters
 reps = 1 # reps per treatment condition ##
 N = 1000 # individuals per species
@@ -150,8 +229,8 @@ for rep in range(1, reps+1):
         '''
 
         next_season = make_first_season(wells, n_species, current_prefixes, u = u)
-'''
+
         final = pd.DataFrame()
         for season in range(1, seasons+1):
-            results = pd.Series(map(lambda x: run_one_simulation(next_season[f'{x}'], gens, antibiotic[x-1], mutant_func, True, current_prefixes[x-1]), [i for i in range(1, wells + 1)]))
-   '''
+            results = pd.Series([run_one_simulation(next_season[f'{x}'], gens, antibiotic[x-1], mutant_func, True, current_prefixes[x-1]) for x in [i for i in range(1, wells + 1)]])
+
