@@ -1,5 +1,7 @@
 import pandas as pd
 import random
+import copy#
+import pdb
 
 ##### mutation_functions.r
 def make_null_function(chance_of_MIC_mutation, max_MIC_change, sd_s_change):
@@ -15,7 +17,7 @@ def make_null_function(chance_of_MIC_mutation, max_MIC_change, sd_s_change):
             
 ##### model_functions2.r
 
-# made class Species which is basically pd.Series but under a diff name
+# made class SpeciesType which is basically pd.Series but under a diff name
 class SpeciesType(pd.core.series.Series):
     def __init__(self, data=None, index=None, dtype=None, name=None, copy=False, fastpath=False):
         pd.core.series.Series.__init__(self, data, index, dtype, name, copy, fastpath)
@@ -25,7 +27,7 @@ def Species(N=1000, u=0.001, first_genotype=None):
 
     if type(first_genotype) != type(None): # avoiding ValueError "truth value of a Series is ambiguous"
         if {'name', 'n', 's', 'MIC', 'ancestors'}.issubset(set(first_genotype.index)):
-            me['genotypes'][first_genotype['name']] = first_genotype
+            me['genotypes'][first_genotype['name']] = first_genotype.copy(deep=True)
         else:
             print('All genotypes must contain the following fields: name (character), n (integer), s (number), MIC (number), ancestors (character)')
             return 0
@@ -81,10 +83,11 @@ def add_genotype(Species, new_genotype):
 def set_n(Species, n):
     if type(Species) == SpeciesType:
         if sum(n) != Species['N']:
-            print('Sum of n != N defined in Species.')
+            print('Sum of n != N defined in Species')
             return -1
         for i in range(len(Species['genotypes'])):
             Species['genotypes'][i]['n'] = n[i]
+        print('SHOW set freq', [x['n'] for x in Species['genotypes']])#
         return Species
     else:
         print('This method requires a SpeciesType object')
@@ -137,7 +140,6 @@ def birth_offspring(N, w):
 def start_next_season(results, wells, n_species, N, u=0.0025):
     next_season = pd.Series(dtype=object)
     for well in range(1, wells+1):
-        print('well', well)#
         next_season[f'{well}'] = pd.Series(dtype=object)
         if well == 1:
             for k in range(1, n_species+1):
@@ -163,7 +165,6 @@ def start_next_season(results, wells, n_species, N, u=0.0025):
                 draw_wells = pd.Series([0], dtype=object)
                 draw_wells[0] = results[f'{well-1}'][f'{k}']
                 draw_wells[1] = results[f'{well}'][f'{k}']
-                globals()['draw_wells1'] = draw_wells[1]#
                 extinction = [any(draw_wells[0]['freq'] == -1), any(draw_wells[1]['freq'] == -1)]
                 if all(extinction):
                     cells_per_well = [0, 0]
@@ -173,10 +174,10 @@ def start_next_season(results, wells, n_species, N, u=0.0025):
                     cells_per_well = [N, 0]
                 else:
                     cells_per_well = [N/2, N/2]
-                print('cells per well', cells_per_well)#
                 for draw_well in range(2):
                     if cells_per_well[draw_well] == 0:
                         continue
+                    #print(f'SHOW prev.result[freq] for {k}', draw_wells[draw_well].loc[draw_wells[draw_well]['gen'] == max(draw_wells[draw_well]['gen'])]['freq'])#
                     curr_result = draw_wells[draw_well].loc[draw_wells[draw_well]['gen'] == max(draw_wells[draw_well]['gen'])].loc[draw_wells[draw_well]['freq'] > 0]
 
                     #curr_result['ancestors'] = as.character
@@ -184,12 +185,9 @@ def start_next_season(results, wells, n_species, N, u=0.0025):
                     genotype_names = [i for i in curr_result['genotypes'].values]
                     genotype_ns = (N * curr_result['freq']).reset_index(drop=True)
                     genotypes = pd.Series([[genotype_names[x]]*int(genotype_ns[x]) for x in range(len(genotype_names))]).explode() ## better idea than int()?
-                    print('len(genotype_names)', len(genotype_names))#
-                    print('genotype_ns', genotype_ns)#
-                    print('genotypes', genotypes)#
+                    print('SHOW len(genotypes)', len(genotypes))#
 
                     genotypes = genotypes.sample(int(cells_per_well[draw_well]))
-                    print('genotypes drawn', len(genotypes))#
 
                     new_genotype_names = pd.Series(new_genotype_names.unique())
                     new_genotype_ns = pd.Series([sum(genotypes == x) for x in new_genotype_names])
@@ -242,9 +240,18 @@ def run_one_simulation(species, gens, antibiotic, mutant_func, interdependent=Tr
                 offspring[f'{k}'][mutants[f'{k}']] = [len(genotype_names)-1+i for i in range(1, len(new_genotypes)+1)]
                 
         genotype_ns = pd.Series([[sum(offspring[f'{k}'] == x) for x in range(len(species[f'{k}']['genotypes']))] for k in range(1, n_species+1)])
+        for k in range(1, n_species+1):
+            print(f'SHOW genotype_ns[{k}-1]', genotype_ns[k-1])#
+        #if n_species == 2 and gen == 3:
+            #pdb.set_trace()
+        #x = [set_n(species[f'{k}'], genotype_ns[k-1]) for k in range(1, n_species+1)]#
         species = pd.Series([set_n(species[f'{k}'], genotype_ns[k-1]) for k in range(1, n_species+1)], index=[f'{k}' for k in range(1, n_species+1)])
         for k in range(1, n_species+1):
+            print('SHOW freq', [x['n'] for x in species[f'{k}']['genotypes']])#
+        ## species['1']['genotypes'][0]['n'] and species['2']['genotypes'][0]['n'] ONLY are a shared index
+        for k in range(1, n_species+1):
             results[f'{k}'] = pd.concat((results[f'{k}'], pd.DataFrame({'gen':gen, 'genotypes':[i for i in species[f'{k}']['genotypes'].index], 'freq':get_n(species[f'{k}'])/species[f'{k}']['N'], 's':get_s(species[f'{k}']), 'MIC':get_MIC(species[f'{k}']), 'ancestors':get_ancestors(species[f'{k}'])})), ignore_index=True)
+            #print(f'SHOW post-concat freq for {k}', results[f'{k}'].loc[results[f'{k}']['gen'] == 3]['freq'])#
 
     return results
 
@@ -253,9 +260,9 @@ reps = 1 # reps per treatment condition ##
 N = 100 # individuals per species
 u = 0.01 # mutation rate 
 max_interdependent_species = 2 # ##
-seasons = 5 # number of transfers ##
-gens = 5 # gens per well per season ##
-wells = 4 #
+seasons = 3 # number of transfers ##
+gens = 3 # gens per well per season ##
+wells = 3 #
 antibiotic_change_per_well = 1 # antibiotic concentration increase per well
 
 ### mutation function parameters
@@ -281,6 +288,8 @@ current_prefixes = [f'w{well}g1' for well in range(1, wells+1)]
 all_data = pd.DataFrame()
 for rep in range(1, reps+1):
     for n_species in numbers_of_species:
+        n_species = 2#
+        print('START NEW N_SPECIES')#
         '''
         print('rep', rep)
         print('\tgens', gens)
@@ -293,8 +302,8 @@ for rep in range(1, reps+1):
 
         final = pd.DataFrame()
         for season in range(1, seasons+1):
-            print('season', season)#
             results = pd.Series([run_one_simulation(next_season[f'{x}'], gens, antibiotic[x-1], mutant_func, True, current_prefixes[x-1]) for x in [i for i in range(1, wells+1)]], index=[f'{well}' for well in range(1, wells+1)])
+        globals()['results'] = results
         next_season = start_next_season(results, wells, n_species, N, u=u)
 
-        ## constant extinction at well 3 (well 2 cells_per_well always = [100,0]), sometimes len(genotypes) > or < N
+        ### between genotype_ns and pre
