@@ -1,8 +1,17 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+#from plotnine import ggplot, aes, geoms, labels
+
 import random
 import copy
-import pdb
+import pdb#
+
+seed = random.randrange(1000)
+random.seed(seed)
+print('seed:', seed)
+#984
 
 ##### mutation_functions.r
 def make_null_function(chance_of_MIC_mutation, max_MIC_change, sd_s_change):
@@ -183,8 +192,7 @@ def start_next_season(results, wells, n_species, N, u=0.0025):
                     
                     genotype_names = [i for i in curr_result['genotypes'].values]
                     genotype_ns = (N * curr_result['freq']).reset_index(drop=True)
-                    genotypes = pd.Series([[genotype_names[x]]*int(genotype_ns[x]) for x in range(len(genotype_names))]).explode() ## better idea than int()?
-
+                    genotypes = pd.Series([[genotype_names[x]]*round(genotype_ns[x]) for x in range(len(genotype_names))]).explode() ## better idea than int()?
                     genotypes = genotypes.sample(int(cells_per_well[draw_well]))
 
                     new_genotype_names = pd.Series(genotypes.unique())
@@ -216,7 +224,6 @@ def run_one_simulation(species, gens, antibiotic, mutant_func, interdependent=Tr
         results[f'{k}'] = pd.DataFrame({'gen':0, 'genotypes': [i for i in species[f'{k}']['genotypes'].index], 'freq': get_n(species[f'{k}'])/species[f'{k}']['N'], 's': get_s(species[f'{k}']), 'MIC': get_MIC(species[f'{k}']), 'ancestors': get_ancestors(species[f'{k}'])})
 
     for gen in range(1, gens+1):
-        #if globals()['wellx'] == 2:#
         w = pd.Series([calculate_fitness(get_s(k), get_n(k), get_MIC(k), antibiotic[gen-1]) for k in species])
         if interdependent:
             if any(w.explode() == -1):
@@ -261,13 +268,13 @@ def summarize_results(results, wells, n_species, season):
     return final                
             
 ### simulation parameters
-reps = 1 # reps per treatment condition ##
+reps = 2 # reps per treatment condition
 N = 100 # individuals per species
 u = 0.01 # mutation rate 
-max_interdependent_species = 2 # ##
-seasons = 5 # number of transfers ##
-gens = 3 # gens per well per season ##
-wells = 3 #
+max_interdependent_species = 3 #
+seasons = 10 # number of transfers ##
+gens = 10 # gens per well per season ##
+wells = 15 #
 antibiotic_change_per_well = 1 # antibiotic concentration increase per well
 
 ### mutation function parameters
@@ -293,7 +300,6 @@ current_prefixes = [f'w{well}g1' for well in range(1, wells+1)]
 all_data = pd.DataFrame()
 for rep in range(1, reps+1):
     for n_species in numbers_of_species:
-        print('START NEW N_SPECIES')#
         '''
         print('rep', rep)
         print('\tgens', gens)
@@ -305,25 +311,37 @@ for rep in range(1, reps+1):
         next_season = make_first_season(wells, n_species, current_prefixes, u = u)
 
         final = pd.DataFrame()
-        for season in range(1, seasons+1):
-            #globals()['seasonx'] = season
+        for season in range(seasons):
+            print(f'RUN SEASON {season}')#
             results = pd.Series([run_one_simulation(next_season[f'{x}'], gens, antibiotic[x-1], mutant_func, True, current_prefixes[x-1]) for x in [i for i in range(1, wells+1)]], index=[f'{well}' for well in range(1, wells+1)])
-            print(f'START SEASON {season +1}')#
             next_season = start_next_season(results.copy(deep=True), wells, n_species, N, u=u)
             current_prefixes = [f'w{well}g{season+1}' for well in range(1, wells+1)]
             final = pd.concat((final, summarize_results(results, wells, n_species, season)), ignore_index=True)
-'''
-    final = final.assign(n_species = n_species)
-    final = final.assign(u = u)
-    final = final.assign(rep = rep)
-    final = final.assign(gens = gens)
-    final = final.assign(mutant_function = mutant_func_name)
-    all_data = pd.concat((all_data, final), ignore_index=True)
-    all_data.to_csv('all_data.csv', index=False)
-''' 
+
+        final = final.assign(n_species = n_species)
+        final = final.assign(u = u)
+        final = final.assign(rep = rep)
+        final = final.assign(gens = gens)
+        final = final.assign(mutant_function = mutant_func_name)
+        all_data = pd.concat((all_data, final), ignore_index=True)
+        all_data.to_csv('all_data.csv', index=False)
+
 ###
-#all_data = pd.read_csv('all_data.csv')
+all_data = pd.read_csv('all_data.csv', na_filter=False)
 
+tol_data = all_data[['well', 'rep', 'gens', 'u', 'n_species', 'season', 'mutant_function']].loc[all_data['species'] == 1].loc[all_data['alive']].copy(deep=True)
+#tol_data['n_species'] = tol_data['n_species'].astype(object)
 
+tol_data = tol_data.groupby(['rep', 'gens', 'u', 'n_species', 'season', 'mutant_function'], as_index=False).last()
+tol_data = tol_data.assign(tolerance = tol_data['well'] - 1)
+tol_stats = tol_data.groupby(['gens', 'u', 'n_species', 'season', 'mutant_function'], as_index=False).tolerance.agg(['mean', 'std', 'count'])
+tol_data = tol_data.groupby(['gens', 'u', 'n_species', 'season', 'mutant_function'], as_index=False).count()[['gens', 'u', 'n_species', 'season', 'mutant_function']]
+tol_data = tol_data.assign(tolerance_sd = tol_stats['std'].reset_index(drop=True).copy(deep=True), n = tol_stats['count'].reset_index(drop=True).copy(deep=True), tolerance = tol_stats['mean'].reset_index(drop=True).copy(deep=True))
 
-    
+sns.lineplot(x='season', y='tolerance', hue = 'n_species', err_style='bars', ci='sd', marker='o', data=tol_data)
+plt.xlabel('transfer')
+plt.ylabel('tolerance (arbitrary)')
+plt.title(f'seed: {seed}')
+plt.show()
+
+#ggplot(tol_data, aes(x=season, y=tolerance, ymax= tolerance + std / math.sqrt(n-1), ymin= tolerance - std / math.sqrt(n-1), color=n_species)) + geoms.geom_errorbar(size=1,width=0) + geoms.geom_line(size=1.5) + geoms.geom_point(size=2) + labels.labs(x='transfer', y='tolerance (arbitrary)')
