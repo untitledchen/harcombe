@@ -2,16 +2,15 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-#from plotnine import ggplot, aes, geoms, labels
 
 import random
 import copy
+import math
 import pdb#
 
 seed = random.randrange(1000)
 random.seed(seed)
 print('seed:', seed)
-#984
 
 ##### mutation_functions.r
 def make_null_function(chance_of_MIC_mutation, max_MIC_change, sd_s_change):
@@ -272,8 +271,8 @@ reps = 2 # reps per treatment condition
 N = 100 # individuals per species
 u = 0.01 # mutation rate 
 max_interdependent_species = 3 #
-seasons = 10 # number of transfers ##
-gens = 10 # gens per well per season ##
+seasons = 5 # number of transfers ##
+gens = 5 # gens per well per season ##
 wells = 15 #
 antibiotic_change_per_well = 1 # antibiotic concentration increase per well
 
@@ -338,10 +337,17 @@ tol_stats = tol_data.groupby(['gens', 'u', 'n_species', 'season', 'mutant_functi
 tol_data = tol_data.groupby(['gens', 'u', 'n_species', 'season', 'mutant_function'], as_index=False).count()[['gens', 'u', 'n_species', 'season', 'mutant_function']]
 tol_data = tol_data.assign(tolerance_sd = tol_stats['std'].reset_index(drop=True).copy(deep=True), n = tol_stats['count'].reset_index(drop=True).copy(deep=True), tolerance = tol_stats['mean'].reset_index(drop=True).copy(deep=True))
 
-sns.lineplot(x='season', y='tolerance', hue = 'n_species', err_style='bars', ci='sd', marker='o', data=tol_data)
+#sns.lineplot(x='season', y='tolerance', hue = 'n_species', err_style='bars', ci='sd', marker='o', data=tol_data)
+
+error = tol_data['tolerance_sd'] / [math.sqrt(i-1) for i in tol_data['n']]
+
+plt.errorbar(tol_data['season'].loc[tol_data['n_species']==1], tol_data['tolerance'].loc[tol_data['n_species']==1], error[:5], label = '1', color = 'tab:blue')#
+plt.errorbar(tol_data['season'].loc[tol_data['n_species']==2], tol_data['tolerance'].loc[tol_data['n_species']==2], error[5:10], label = '2', color = 'tab:orange')#
+plt.errorbar(tol_data['season'].loc[tol_data['n_species']==3], tol_data['tolerance'].loc[tol_data['n_species']==3], error[10:], label = '3', color = 'tab:green')#
+
 plt.xlabel('transfer')
 plt.ylabel('tolerance (arbitrary)')
 plt.title(f'seed: {seed}')
 plt.show()
 
-#ggplot(tol_data, aes(x=season, y=tolerance, ymax= tolerance + std / math.sqrt(n-1), ymin= tolerance - std / math.sqrt(n-1), color=n_species)) + geoms.geom_errorbar(size=1,width=0) + geoms.geom_line(size=1.5) + geoms.geom_point(size=2) + labels.labs(x='transfer', y='tolerance (arbitrary)')
+## error bars, only 0.5's have tolerance_sd, tuples rather than dataframes
