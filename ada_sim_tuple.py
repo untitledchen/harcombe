@@ -48,55 +48,29 @@ class Species():
     def __str__(self):
         return "{'genotypes': " + str([i.name for i in self.genotypes]) + ", 'N': " + str(self.N) + ", 'u': " + str(self.u) + "}"
 
-class Well():
+class Well(list):
     def __init__(self, well, n_species, N, u, curr_prefix):
+        list.__init__(self)
+        
         self.name = well
-        self.n_species = []
         for k in range(n_species):
-            self.n_species.append(Species(k, N, u, Genotype(curr_prefix, N)))
+            self.append(Species(k, N, u, Genotype(curr_prefix, N)))
 
     def __str__(self):
-        return str([i.name for i in self.n_species])
+        return str([i.name for i in self])
     
-class Season():
+class Season(list):
     def __init__(self, wells, prefixes, n_species, N, u):
-        self = []
+        list.__init__(self)
 
         for well in range(wells):
             curr_prefix = prefixes[well]
             self.append(Well(well, n_species, N, u, curr_prefix))
 
-    def __iter__(self):
-            yield well
-
     def __str__(self):
         return str([i.name for i in self])
-##override iter
-def Species(N=1000, u=0.001, first_genotype=None):
-    me = {'genotypes':list(), 'N':N, 'u':u}##
-
-    if first_genotype != None:
-        if {'name', 'n', 's', 'MIC', 'ancestors'}.issubset(set(first_genotype[0])):
-            me['genotypes'][first_genotype['name']] = first_genotype
-        else:
-            print('All genotypes must contain the following fields: name (character), n (integer), s (number), MIC (number), ancestors (character)')
-            return 0
-        
-    return me
-
-def make_first_season(wells, n_species, current_prefixes, u=0.0025):
-    next_season = {}
-    for well in range(1, wells+1):
-        current_prefix = current_prefixes[well-1]
-        first_genotype = {'name': f'{current_prefix}_0', 'n': N, 's': 1, 'MIC': 0, 'ancestors': '0'}
-        
-        species = {}
-        for k in range(1, n_species+1):
-            species[f'{k}'] = Species(N, u, first_genotype.copy(deep=True))
-
-        next_season[f'{well}'] = species
-
-    return next_season
+    
+##
 
 def get_mutants(Species):
     if type(Species) == SpeciesType:
@@ -144,9 +118,9 @@ def make_mutants(Species, ancestor_genotype_names, new_genotype_names, mutant_fu
         print('This method requires a SpeciesType object')
         return Species
 
-def birth_offspring(N, w):
-    chance = pd.Series([random.uniform(0,1) for i in range(N)])
-    return pd.Series([w[x < w].index[0] for x in chance])
+def birth_offspring(N, w): ## check
+    chance = [random.uniform(0,1) for i in range(N)]
+    return [[i < j for j in w].index(True) for i in chance] 
 
 def start_next_season(results, wells, n_species, N, u=0.0025):
     next_season = pd.Series(dtype=object)
@@ -206,70 +180,55 @@ def start_next_season(results, wells, n_species, N, u=0.0025):
     return next_season
 
 def get_n(Species):
-    if type(Species) == SpeciesType:
-        return [i['n'] for i in Species['genotypes']]
-    else:
-        print('This method requires a SpeciesType object')
-        return Species
+    return [i.n for i in Species.genotypes]
 
 def get_s(Species):
-    if type(Species) == SpeciesType:
-        return [i['s'] for i in Species['genotypes']]
-    else:
-        print('This method requires a SpeciesType object')
-        return Species
+    return [i.s for i in Species.genotypes]
 
 def get_MIC(Species):
-    if type(Species) == SpeciesType:
-        return [i['MIC'] for i in Species['genotypes']]
-    else:
-        print('This method requires a SpeciesType object')
-        return Species
+    return [i.MIC for i in Species.genotypes]
 
 def get_ancestors(Species):
-    if type(Species) == SpeciesType:
-        return [i['ancestors'] for i in Species['genotypes']]
-    else:
-        print('This method requires a SpeciesType object')
-        return Species
+    return [i.ancestors for i in Species.genotypes]
 
 def calculate_fitness(s, n, MIC, antibiotic):
     MIC_tf = [i < antibiotic for i in MIC]
     s = [[i,0][true] for i,true in zip(s, MIC_tf)]
     
-    if all(i == 0 for i in s):
+    if all([i == 0 for i in s]):
         print('All individuals have zero fitness')
         return -1
-    ##
+    
     w = [i/sum(s) for i in s]
     w = pd.Series([i/sum(s) for i in s]).cumsum()
     return list(w)
 
-def run_one_simulation(species, gens, antibiotic, mutant_func, interdependent=True, current_prefix=''):
+def run_one_simulation(species, gens, antibiotic, mutant_func, interdependent, current_prefix):
     n_species = len(species)
-    pop_sizes = [i['N'] for i in species]
 
-    antibiotic = [antibiotic]*gens # removed the len check
+    antibiotic = [antibiotic]*gens
 
-    results = {} #moved it up here
+    results = [[('gen', 'genotypes', 'freq', 's', 'MIC', 'ancestors')] for i in range(n_species)]
+    
     if interdependent:
-        if any([len(i['genotypes']) == 0 for i in species]):
-            for k in range(1, n_species+1):
-                results[f'{k}'] ={'gen':-1, 'genotypes':'-1', 'freq':-1, 's':-1, 'MIC':-1, 'ancestors':'-1'}
+        if any([len(i.genotypes) == 0 for i in species]):
+            for k in range(n_species):
+                results[k+1].append((-1, '-1', -1, -1, -1, '-1'))
             return results
 
-    for k in range(1, n_species+1):
-        results[f'{k}'] = {'gen':[0], 'genotypes': [[i for i in species[f'{k}']['genotypes'].keys()]], 'freq': [[i/species[f'{k}']['N'] for i in get_n(species[f'{k}'])]], 's': [get_s(species[f'{k}'])], 'MIC': [get_MIC(species[f'{k}'])], 'ancestors': [get_ancestors(species[f'{k}']])} ##
-
-    for gen in range(1, gens+1):
-        w = [calculate_fitness(get_s(k), get_n(k), get_MIC(k), antibiotic[gen-1]) for k in species] ##
+    for k in range(n_species):
+        results[k+1].append((0, [i.name for i in species[k].genotypes], [i/species[k].N for i in get_n(species[k])], get_s(species[k]), get_MIC(species[k]), get_ancestors(species[k])
+        
+    for gen in range(gens):
+        w = [calculate_fitness(get_s(k), get_n(k), get_MIC(k), antibiotic[gen-1]) for k in species]
         if interdependent:
             if any(w == -1):
-                for k in range(1, n_species+1):
-                    results[f'{k}'] = {'gen':-1, 'genotypes':'-1', 'freq':-1, 's':-1, 'MIC':-1, 'ancestors':'-1'}
+                for k in range(n_species):
+                    results[k+1].append((-1, '-1', -1, -1, -1, '-1'))
                 return results
 
-        offspring = pd.Series([birth_offspring(pop_sizes[k-1], w[k-1]) for k in range(1, n_species+1)], index=[f'{i}' for i in range(1, n_species+1)])
+        pop_sizes = [i['N'] for i in species]
+        offspring = [birth_offspring(pop_sizes[k], w[k]) for k in range(n_species)]##
 
         mutants = pd.Series([get_mutants(x) for x in species], index=[i for i in species.index], dtype=object)
 
@@ -344,10 +303,9 @@ for rep in range(1, reps+1):
         print('\tmutant func', mutant_func_name)
         print('\tn_species', n_species)
         '''
-
-        next_season = make_first_season(wells, n_species, current_prefixes, u = u)
-
-        final = pd.DataFrame() ##or make it a list
+        next_season = Season(wells, [f'w{well}g1' for well in range(wells)], n_species, N, u)
+##
+        final = pd.DataFrame()
         for season in range(seasons):
             results = [run_one_simulation(next_season[f'{well}'], gens, antibiotic[well-1], mutant_func, True, current_prefixes[well-1]) for well in [i for i in range(1, wells+1)]] ##
             next_season = start_next_season(results.copy(deep=True), wells, n_species, N, u=u)
@@ -387,4 +345,4 @@ plt.ylabel('tolerance (arbitrary)')
 plt.title(f'seed: {seed}')
 plt.show()
 
-## error bars, only 0.5's have tolerance_sd, tuples rather than dataframes
+##only 0.5's have tolerance_sd
