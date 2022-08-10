@@ -227,10 +227,9 @@ def start_next_season(results, wells, n_species, N, u): ##
             for k in range(n_species):
                 max_gen = results[well][k][-1][0]
                 curr_result = [i for i in results[well][k] if (i[0] == max_gen and i[2] > 0)]
-                # last check
-                pdb.set_trace()#
+
                 genotype_names = [(ind, val[1]) for ind, val in enumerate(curr_result)]
-                genotype_ns = [i[2]*N for i in curr_result] ## below: simplify later
+                genotype_ns = [i[2]*N for i in curr_result]
                 
                 genotypes_pre = [[genotype_names[i][1]]*round_half_up(genotype_ns[i]) for i in range(len(genotype_names))]
                 genotypes = [element for sublist in genotypes_pre for element in sublist]
@@ -244,14 +243,12 @@ def start_next_season(results, wells, n_species, N, u): ##
                 for i in range(len(new_genotype_names)):
                     ind = new_genotype_names[i][0]
                     next_season[well][k].add_genotype(new_genotype_ns[i], curr_result[ind][3], curr_result[ind][4], curr_result[ind][5], genotype_name=new_genotype_names[i][1])
-
+# last check
         else:
-            for k in range(1, n_species+1):
-                new_population = Species(N, u)
-                draw_wells = pd.Series([0], dtype=object)
-                draw_wells[0] = results[f'{well-1}'][f'{k}']
-                draw_wells[1] = results[f'{well}'][f'{k}']
-                extinction = [any(draw_wells[0]['freq'] == -1), any(draw_wells[1]['freq'] == -1)]
+            for k in range(n_species):
+                
+                draw_wells = [results[well-1][k], results[well][k]]
+                extinction = [any([(i[2] == -1) for i in draw_wells[0]]), any([(i[2] == -1) for i in draw_wells[1]])]
                 if all(extinction):
                     cells_per_well = [0, 0]
                 elif extinction[0] and not extinction[1]:
@@ -263,21 +260,26 @@ def start_next_season(results, wells, n_species, N, u): ##
                 for draw_well in range(2):
                     if cells_per_well[draw_well] == 0:
                         continue
-                    curr_result = draw_wells[draw_well].loc[draw_wells[draw_well]['gen'] == max(draw_wells[draw_well]['gen'])].loc[draw_wells[draw_well]['freq'] > 0]
-                    #curr_result['ancestors'] = as.character
+                    max_gen = draw_wells[draw_well][-1][0]
+                    curr_result = [i for i in draw_wells[draw_well] if (i[0] == max_gen and i[2] > 0)]
+ 
+                    genotype_names = [(ind, val[1]) for ind, val in enumerate(curr_result)]
+                    genotype_ns = [i[2]*N for i in curr_result]
                     
-                    genotype_names = [i for i in curr_result['genotypes'].values]
-                    genotype_ns = (N * curr_result['freq']).reset_index(drop=True)
-                    genotypes = pd.Series([[genotype_names[x]]*round(genotype_ns[x]) for x in range(len(genotype_names))]).explode() ## better idea than int()?
-                    genotypes = genotypes.sample(int(cells_per_well[draw_well]))
+                    genotypes_pre = [[genotype_names[i]]*round_half_up(genotype_ns[i]) for i in range(len(genotype_names))]
+                    genotypes = [element for sublist in genotypes_pre for element in sublist]
+                    genotypes = random.sample(genotypes, round_half_up(cells_per_well[draw_well]))
 
-                    new_genotype_names = pd.Series(genotypes.unique())
-                    new_genotype_ns = pd.Series([sum(genotypes == x) for x in new_genotype_names])
+                    new_genotype_names = pd.Series(genotypes).unique()
+                    new_genotype_names = list(new_genotype_names)
+                    new_genotype_names.sort()
+                    new_genotype_ns = [genotypes.count(i) for i in new_genotype_names]
+                    print('sum(new_genotype_ns)', sum(new_genotype_ns))#
 
+                    next_season[well].add_species(N, u)
                     for i in range(len(new_genotype_names)):
-                        new_genotype = pd.Series({'name': new_genotype_names[i], 'n': new_genotype_ns[i], 's': curr_result['s'].loc[curr_result['genotypes'] == new_genotype_names[i]], 'MIC': curr_result['MIC'].loc[curr_result['genotypes'] == new_genotype_names[i]], 'ancestors': curr_result['ancestors'].loc[curr_result['genotypes'] == new_genotype_names[i]]})
-                        new_population = add_genotype(new_population, new_genotype)
-                next_season[f'{well}'][f'{k}'] = new_population
+                        ind = new_genotype_names[i][0]
+                        next_season[well][k].add_genotype(new_genotype_ns[i], curr_result[ind][3], curr_result[ind][4], curr_result[ind][5], genotype_name=new_genotype_names[i][1])
             
     return next_season
 
