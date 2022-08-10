@@ -11,6 +11,13 @@ seed = random.randrange(1000)
 random.seed(seed)
 print('seed:', seed)
 
+def round_half_up(n, decimals=0):
+    multiplier = 10 ** decimals
+    rounded = math.floor(n * multiplier + 0.5) / multiplier
+    if decimals == 0:
+        rounded = int(rounded)
+    return rounded
+
 ##### mutation_functions.r
 def make_null_function(chance_of_MIC_mutation, max_MIC_change, sd_s_change):
     def null_function():
@@ -45,11 +52,16 @@ class Species():
     def __str__(self):
         return "{'genotypes': " + str([i.name for i in self.genotypes]) + ", 'N': " + str(self.N) + ", 'u': " + str(self.u) + "}"
 
-    def add_genotypes(self, n, s=[1], MIC=[0], ancestors=['0'], genotype_names=None, genotype_num=1):
-        if genotype_names == None:
-            genotype_names = [i for i in genotype_num]
-        for i in range(genotype_num):
-            self.genotypes.append(Genotype(genotype_names[i], n[i], s[i], MIC[i], ancestors[i]))
+    def add_genotype(self, n, s=1, MIC=0, ancestors='0', genotype_name=None, genotype_num=1):
+        if genotype_num == 1:
+            if genotype_name == None:
+                genotype_name = len(genotypes)
+            self.genotypes.append(Genotype(genotype_name, n, s, MIC, ancestors))
+        else:
+            if genotype_name == None:
+                genotype_name = [(len(genotypes) + i) for i in range(genotype_num)]
+            for i in range(genotype_num):
+                self.genotypes.append(Genotype(genotype_name[i], n[i], s[i], MIC[i], ancestors[i]))
 
 class Well(list):
     def __init__(self, name):
@@ -59,11 +71,16 @@ class Well(list):
     def __str__(self):
         return str([i.name for i in self])
 
-    def add_species(self, N, u, species_names=None, species_num=1):
-        if species_names == None:
-            species_names = [i for i in range(species_num)]
-        for i in range(species_num):
-            self.append(Species(species_names[i], N[i], u[i]))
+    def add_species(self, N, u, species_name=None, species_num=1):
+        if species_num == 1:
+            if species_name == None:
+                species_name = len(self)
+            self.append(Species(species_name, N, u))
+        else:
+            if species_name == None:
+                species_name = [(len(self) + i) for i in range(species_num)]
+            for i in range(species_num):
+                self.append(Species(species_name[i], N[i], u[i]))
     
 class Season(list):
     def __init__(self):
@@ -72,23 +89,25 @@ class Season(list):
     def __str__(self):
         return str([i.name for i in self])
 
-    def add_wells(self, well_names=None, well_num=1):
-        if well_names == None:
-            well_names = [i for i in range(well_num)]
-        for i in range(well_num):
-            self.append(Well(well_names[i]))
+    def add_well(self, well_name=None, well_num=1):
+        if well_num == 1:
+            if well_name == None:
+                well_name = len(self)
+            self.append(Well(well_name))
+        else:
+            if well_name == None:
+                well_name = [(len(self) + i) for i in range(well_num)]
+            for i in range(well_num):
+                self.append(Well(well_name[i]))
 
-def make_first_season(wells, n_species, N, u, genotype_prefixes=None):
-    if genotype_prefixes == None:
-        genotype_prefixes = [f'{i}g' for i in range(wells)]
-    
+def make_first_season(wells, n_species, N, u, genotype_prefixes):
     first_season = Season()
 
-    first_season.add_wells(well_num=wells)
+    first_season.add_well(well_num=wells)
     for well in range(wells):
-        first_season[well].add_species([N for i in range(n_species)], [u for i in range(n_species)], species_num=n_species)
         for k in range(n_species):
-            first_season[well][k].add_genotypes([N], genotype_names=[genotype_prefixes[well]+'_0'])
+            first_season[well].add_species(N, u)
+            first_season[well][k].add_genotype(N, genotype_name=genotype_prefixes[well]+'_0')
 
     return first_season
 
@@ -101,8 +120,8 @@ def get_s(Species):
 def get_MIC(Species):
     return [i.MIC for i in Species.genotypes]
 
-def get_ancestors(Species):
-    return [i.ancestors for i in Species.genotypes]
+##def get_ancestors(Species):
+##    return [i.ancestors for i in Species.genotypes]
 
 def calculate_fitness(s, n, MIC, antibiotic):
     MIC_tf = [i < antibiotic for i in MIC]
@@ -120,7 +139,7 @@ def birth_offspring(N, w):
     chance = [random.uniform(0,1) for i in range(N)]
     return [[i < j for j in w].index(True) for i in chance]
 
-def get_mutants(Species): # returning tf vector
+def get_mutants(Species):
     chance = [random.uniform(0,1) for i in range(Species.N)]
     chance_tf = [i < Species.u for i in chance]
     return [ind for ind, true in enumerate(chance_tf) if true]
@@ -162,7 +181,8 @@ def run_one_simulation(species, gens, antibiotic, mutant_func, interdependent, c
             return results
 
     for k in range(n_species):
-        results[k].append((0, [i.name for i in species[k].genotypes], [i/species[k].N for i in get_n(species[k])], get_s(species[k]), get_MIC(species[k]), get_ancestors(species[k])))
+        for i in species[k].genotypes:
+            results[k].append((0, i.name, i.n / species[k].N, i.s, i.MIC, i.ancestors))
         
     for gen in range(gens):
         w = [calculate_fitness(get_s(k), get_n(k), get_MIC(k), antibiotic[gen-1]) for k in species]
@@ -191,38 +211,40 @@ def run_one_simulation(species, gens, antibiotic, mutant_func, interdependent, c
                     offspring[k][mutants[k][i]] = len(genotype_names)+i
 
         genotype_ns = [[offspring[k].count(i) for i in range(len(species[k].genotypes))] for k in range(n_species)]
-        
         species = [set_n(species[k], genotype_ns[k]) for k in range(n_species)]
 
         for k in range(n_species):
-            results[k].append((gen, [i.name for i in species[k].genotypes], [i/species[k].N for i in get_n(species[k])], get_s(species[k]), get_MIC(species[k]), get_ancestors(species[k])))
-
+            for i in species[k].genotypes:
+                results[k].append((gen, i.name, i.n / species[k].N, i.s, i.MIC, i.ancestors))
     return results
 
-def start_next_season(results, wells, n_species, N, u):##
+def start_next_season(results, wells, n_species, N, u): ##
     next_season = Season()
-    next_season.add_wells(well_num=wells)
+    next_season.add_well(well_num=wells)
     
     for well in range(wells):
-        if well == 1:
+        if well == 0:
             for k in range(n_species):
                 max_gen = results[well][k][-1][0]
-                print(max_gen)#
-                curr_result = [i for i in results[well][k] if (i[0] == max_gen and i[2] > 0)] ##
-                curr_result = results['1'][f'{k}'].loc[results['1'][f'{k}']['gen'] == max(results['1'][f'{k}']['gen'])].loc[results['1'][f'{k}']['freq'] > 0]
+                curr_result = [i for i in results[well][k] if (i[0] == max_gen and i[2] > 0)]
+                # last check
+                pdb.set_trace()#
+                genotype_names = [(ind, val[1]) for ind, val in enumerate(curr_result)]
+                genotype_ns = [i[2]*N for i in curr_result] ## below: simplify later
+                
+                genotypes_pre = [[genotype_names[i][1]]*round_half_up(genotype_ns[i]) for i in range(len(genotype_names))]
+                genotypes = [element for sublist in genotypes_pre for element in sublist]
 
-                genotype_names = [i for i in curr_result['genotypes'].values]
-                genotype_ns = (N * curr_result['freq']).reset_index(drop=True)
-                genotypes = pd.Series([[genotype_names[x]]*int(genotype_ns[x]) for x in range(len(genotype_names))]).explode()
+                new_genotype_names = genotype_names
+                new_genotype_ns = genotype_ns
+                print('sum(new_genotype_ns)', sum(new_genotype_ns))#
 
-                new_genotype_names = pd.Series(genotypes.unique())
-                new_genotype_ns = pd.Series([sum(genotypes == x) for x in new_genotype_names])
-
-                new_population = Species(N, u)
+                next_season[well].add_species(N, u)
+                print(next_season[well])#
                 for i in range(len(new_genotype_names)):
-                    new_genotype = pd.Series({'name': new_genotype_names[i], 'n': new_genotype_ns[i], 's': curr_result['s'].loc[curr_result['genotypes'] == new_genotype_names[i]], 'MIC': curr_result['MIC'].loc[curr_result['genotypes'] == new_genotype_names[i]], 'ancestors': curr_result['ancestors'].loc[curr_result['genotypes'] == new_genotype_names[i]]})
-                    new_population = add_genotype(new_population, new_genotype)
-                next_season[f'{well}'][f'{k}'] = new_population
+                    ind = new_genotype_names[i][0]
+                    next_season[well][k].add_genotype(new_genotype_ns[i], curr_result[ind][3], curr_result[ind][4], curr_result[ind][5], genotype_name=new_genotype_names[i][1])
+
         else:
             for k in range(1, n_species+1):
                 new_population = Species(N, u)
