@@ -120,9 +120,6 @@ def get_s(Species):
 def get_MIC(Species):
     return [i.MIC for i in Species.genotypes]
 
-##def get_ancestors(Species):
-##    return [i.ancestors for i in Species.genotypes]
-
 def calculate_fitness(s, n, MIC, antibiotic):
     MIC_tf = [i < antibiotic for i in MIC]
     s = [[i,0][true] for i,true in zip(s, MIC_tf)]
@@ -144,18 +141,12 @@ def get_mutants(Species):
     chance_tf = [i < Species.u for i in chance]
     return [ind for ind, true in enumerate(chance_tf) if true]
 
-def add_genotype(Species, new_genotype):
-    Species.genotypes.append(new_genotype)
-    return Species
-
 def make_mutants(Species, ancestor_genotype_names, new_genotype_names, mutant_function):
     for i in range(len(ancestor_genotype_names)):
         ancestor_name = ancestor_genotype_names[i][1]
         ancestor = Species.genotypes[ancestor_genotype_names[i][0]]
-
-        mutant = Genotype(name=new_genotype_names[i], n=1, s=max([0, ancestor.s+mutant_function()[0]]), MIC=max([0, ancestor.MIC+mutant_function()[1]]), ancestors= ancestor_name+' '+ancestor.ancestors)
         
-        Species = add_genotype(Species, copy.deepcopy(mutant))
+        Species.add_genotype(genotype_name=new_genotype_names[i], n=1, s=max([0, ancestor.s+mutant_function()[0]]), MIC=max([0, ancestor.MIC+mutant_function()[1]]), ancestors= ancestor_name+' '+ancestor.ancestors)
     return Species
 
 def set_n(Species, genotype_ns):
@@ -184,7 +175,7 @@ def run_one_simulation(species, gens, antibiotic, mutant_func, interdependent, c
         for i in species[k].genotypes:
             results[k].append((0, i.name, i.n / species[k].N, i.s, i.MIC, i.ancestors))
         
-    for gen in range(gens):
+    for gen in range(1, gens+1):
         w = [calculate_fitness(get_s(k), get_n(k), get_MIC(k), antibiotic[gen-1]) for k in species]
         if interdependent:
             if any([i == -1 for i in w]):
@@ -218,7 +209,7 @@ def run_one_simulation(species, gens, antibiotic, mutant_func, interdependent, c
                 results[k].append((gen, i.name, i.n / species[k].N, i.s, i.MIC, i.ancestors))
     return results
 
-def start_next_season(results, wells, n_species, N, u): ##
+def start_next_season(results, wells, n_species, N, u):
     next_season = Season()
     next_season.add_well(well_num=wells)
     
@@ -243,7 +234,6 @@ def start_next_season(results, wells, n_species, N, u): ##
                 for i in range(len(new_genotype_names)):
                     ind = new_genotype_names[i][0]
                     next_season[well][k].add_genotype(new_genotype_ns[i], curr_result[ind][3], curr_result[ind][4], curr_result[ind][5], genotype_name=new_genotype_names[i][1])
-# last check
         else:
             for k in range(n_species):
                 
@@ -283,19 +273,24 @@ def start_next_season(results, wells, n_species, N, u): ##
             
     return next_season
 
-def summarize_results(results, wells, n_species, season):
-    final = pd.DataFrame()
-    for well in range(1, wells+1):
-        for k in range(1, n_species+1):
-            curr_result = results[f'{well}'][f'{k}']
-            if any(curr_result['gen'] == -1):
-                final = pd.concat((final, pd.DataFrame({'well':well, 'species':k, 'season':season, 'alive':False, 'n_genotypes':0, 's':np.nan, 'MIC':np.nan, 'mutations':np.nan}, index=[0])), ignore_index=True)
+def summarize_results(results, wells, n_species, season, u, rep, gens, mutant_function):
+    final = []
+    for well in range(wells):
+        for k in range(n_species):
+            curr_result = results[well][k]
+            if any([i[0] == -1 for i in curr_result]):
+                final.append((well, k, season, False, 0, np.nan, np.nan, np.nan, n_species, u, rep, gens, mutant_function))
                 continue
-            curr_result = curr_result.loc[curr_result['gen']==max(curr_result['gen'])].loc[curr_result['freq']>0]
-            curr_result = curr_result.assign(n_mutations=[(len(x.split(' '))-1) for x in curr_result['ancestors']])
+            max_gen = curr_result[-1][0]
+            curr_result = [i for i in curr_result if (i[0] == max_gen and i[2] > 0)]
 
-            final = pd.concat((final, pd.DataFrame({'well':well, 'species':k, 'season':season, 'alive':True, 'n_genotypes':len(curr_result['genotypes']), 's':sum(curr_result['s']*curr_result['freq']), 'MIC':sum(curr_result['MIC']*curr_result['freq']), 'mutations':sum(curr_result['n_mutations']*curr_result['freq'])}, index=[0])), ignore_index=True)
-    return final                
+            final.append((well, k, season, True, len(curr_result), sum([i[3]*i[2] for i in curr_result]), sum([i[4]*i[2] for i in curr_result]), sum([(len(i[5].split(' '))-1)*i[2] for i in curr_result]), n_species, u, rep, gens, mutant_function))## n_genotypes originally = len(curr_result['genotypes'])
+    return final
+
+def tuple_list_to_pd_dataframe(tuple_list):
+    df = pd.DataFrame()
+    for header in tuple_list[0]:
+        pd.DataFrame()
 
 ##### adamowicz_et_al_evolution_model_code_example.r
 ### simulation parameters
@@ -324,10 +319,11 @@ mutant_function_name = 'null'
 ### model
 n_species_in_consortium = [i for i in range(1, max_interdependent_species+1)]
 antibiotic = [i*antibiotic_change_per_well for i in range(wells)]
-current_prefixes = [f'w{well}g1' for well in range(wells)]
+current_prefixes = [f'w{well}s0' for well in range(wells)]
 
 all_data = pd.DataFrame()
-for rep in range(1, reps+1):
+final = [('well', 'species', 'season', 'alive', 'n_genotypes', 's', 'MIC', 'mutations', 'n_species', 'u', 'rep', 'gens', 'mutant_function')]
+for rep in range(reps):
     for n_species in n_species_in_consortium:
         '''
         print('rep', rep)
@@ -338,21 +334,15 @@ for rep in range(1, reps+1):
         '''
         next_season = make_first_season(wells, n_species, N, u, genotype_prefixes=current_prefixes)
 
-        final = pd.DataFrame()
         for season in range(seasons):
             results = [run_one_simulation(next_season[well], gens, antibiotic[well], mutant_function, True, current_prefixes[well]) for well in range(wells)]
-            next_season = start_next_season(results, wells, n_species, N, u)##
-            current_prefixes = [f'w{well}g{season+1}' for well in range(1, wells+1)]
-            final = pd.concat((final, summarize_results(results, wells, n_species, season)), ignore_index=True)
+            next_season = start_next_season(results, wells, n_species, N, u)
+            current_prefixes = [f'w{well}s{season}' for well in range(wells)]
+            final = final + summarize_results(results, wells, n_species, season, u, rep, gens, mutant_function_name)
 
-        final = final.assign(n_species = n_species)
-        final = final.assign(u = u)
-        final = final.assign(rep = rep)
-        final = final.assign(gens = gens)
-        final = final.assign(mutant_function = mutant_function_name)
-        all_data = pd.concat((all_data, final), ignore_index=True)
+        #all_data = pd.concat((all_data, final), ignore_index=True)
+all_data = tuple_list_to_pd_dataframe(final)
 all_data.to_csv('all_data.csv', index=False)
-
 ###
 all_data = pd.read_csv('all_data.csv', na_filter=False)
 
