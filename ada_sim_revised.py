@@ -8,7 +8,7 @@ import math
 import pdb#
 
 seed = random.randrange(1000)
-random.seed(seed)
+random.seed(seed)#
 print('seed:', seed)
 
 def round_half_up(n, decimals=0):
@@ -227,16 +227,14 @@ def start_next_season(results, wells, n_species, N, u):
 
                 new_genotype_names = genotype_names
                 new_genotype_ns = genotype_ns
-                print('sum(new_genotype_ns)', sum(new_genotype_ns))#
 
                 next_season[well].add_species(N, u)
-                print(next_season[well])#
                 for i in range(len(new_genotype_names)):
                     ind = new_genotype_names[i][0]
                     next_season[well][k].add_genotype(new_genotype_ns[i], curr_result[ind][3], curr_result[ind][4], curr_result[ind][5], genotype_name=new_genotype_names[i][1])
         else:
             for k in range(n_species):
-                
+                next_season[well].add_species(N, u)
                 draw_wells = [results[well-1][k], results[well][k]]
                 extinction = [any([(i[2] == -1) for i in draw_wells[0]]), any([(i[2] == -1) for i in draw_wells[1]])]
                 if all(extinction):
@@ -264,9 +262,7 @@ def start_next_season(results, wells, n_species, N, u):
                     new_genotype_names = list(new_genotype_names)
                     new_genotype_names.sort()
                     new_genotype_ns = [genotypes.count(i) for i in new_genotype_names]
-                    print('sum(new_genotype_ns)', sum(new_genotype_ns))#
 
-                    next_season[well].add_species(N, u)
                     for i in range(len(new_genotype_names)):
                         ind = new_genotype_names[i][0]
                         next_season[well][k].add_genotype(new_genotype_ns[i], curr_result[ind][3], curr_result[ind][4], curr_result[ind][5], genotype_name=new_genotype_names[i][1])
@@ -288,9 +284,12 @@ def summarize_results(results, wells, n_species, season, u, rep, gens, mutant_fu
     return final
 
 def tuple_list_to_pd_dataframe(tuple_list):
-    df = pd.DataFrame()
-    for header in tuple_list[0]:
-        pd.DataFrame()
+    dic = {}
+    for ind in range(len(tuple_list[0])):
+        dic[tuple_list[0][ind]] = [i[ind] for i in tuple_list[1:]]
+        
+    return pd.DataFrame(dic)
+        
 
 ##### adamowicz_et_al_evolution_model_code_example.r
 ### simulation parameters
@@ -335,6 +334,7 @@ for rep in range(reps):
         next_season = make_first_season(wells, n_species, N, u, genotype_prefixes=current_prefixes)
 
         for season in range(seasons):
+            globals()['season'] == season#
             results = [run_one_simulation(next_season[well], gens, antibiotic[well], mutant_function, True, current_prefixes[well]) for well in range(wells)]
             next_season = start_next_season(results, wells, n_species, N, u)
             current_prefixes = [f'w{well}s{season}' for well in range(wells)]
@@ -343,6 +343,7 @@ for rep in range(reps):
         #all_data = pd.concat((all_data, final), ignore_index=True)
 all_data = tuple_list_to_pd_dataframe(final)
 all_data.to_csv('all_data.csv', index=False)
+#pdb.set_trace()
 ###
 all_data = pd.read_csv('all_data.csv', na_filter=False)
 
@@ -353,14 +354,16 @@ tol_data = tol_data.assign(tolerance = tol_data['well'] - 1)
 tol_stats = tol_data.groupby(['gens', 'u', 'n_species', 'season', 'mutant_function'], as_index=False).tolerance.agg(['mean', 'std', 'count'])
 tol_data = tol_data.groupby(['gens', 'u', 'n_species', 'season', 'mutant_function'], as_index=False).count()[['gens', 'u', 'n_species', 'season', 'mutant_function']]
 tol_data = tol_data.assign(tolerance_sd = tol_stats['std'].reset_index(drop=True).copy(deep=True), n = tol_stats['count'].reset_index(drop=True).copy(deep=True), tolerance = tol_stats['mean'].reset_index(drop=True).copy(deep=True))
+import seaborn as sns
+sns.lineplot(x='season', y='tolerance', hue = 'n_species', err_style='bars', ci='sd', marker='o', data=tol_data)
+'''
+error1 = tol_data['tolerance_sd'].loc[tol_data['n_species']==1] / [math.sqrt(i-1) for i in tol_data['n'].loc[tol_data['n_species']==1]]
+error2 = tol_data['tolerance_sd'].loc[tol_data['n_species']==2] / [math.sqrt(i-1) for i in tol_data['n'].loc[tol_data['n_species']==2]]
+error3 = tol_data['tolerance_sd'].loc[tol_data['n_species']==3] / [math.sqrt(i-1) for i in tol_data['n'].loc[tol_data['n_species']==3]]
 
-#sns.lineplot(x='season', y='tolerance', hue = 'n_species', err_style='bars', ci='sd', marker='o', data=tol_data)
-
-error = tol_data['tolerance_sd'] / [math.sqrt(i-1) for i in tol_data['n']]
-
-plt.errorbar(tol_data['season'].loc[tol_data['n_species']==1], tol_data['tolerance'].loc[tol_data['n_species']==1], error[:5], label = '1', color = 'tab:blue')#
-plt.errorbar(tol_data['season'].loc[tol_data['n_species']==2], tol_data['tolerance'].loc[tol_data['n_species']==2], error[5:10], label = '2', color = 'tab:orange')#
-plt.errorbar(tol_data['season'].loc[tol_data['n_species']==3], tol_data['tolerance'].loc[tol_data['n_species']==3], error[10:], label = '3', color = 'tab:green')#
+plt.errorbar(tol_data['season'].loc[tol_data['n_species']==1], tol_data['tolerance'].loc[tol_data['n_species']==1], error1, label = '1', color = 'tab:blue')#
+#plt.errorbar(tol_data['season'].loc[tol_data['n_species']==2], tol_data['tolerance'].loc[tol_data['n_species']==2], error2, label = '2', color = 'tab:orange')#
+#plt.errorbar(tol_data['season'].loc[tol_data['n_species']==3], tol_data['tolerance'].loc[tol_data['n_species']==3], error3, label = '3', color = 'tab:green')#
 
 plt.xlabel('transfer')
 plt.ylabel('tolerance (arbitrary)')
@@ -369,3 +372,4 @@ plt.show()
 
 ##only 0.5's have tolerance_sd
 
+'''
