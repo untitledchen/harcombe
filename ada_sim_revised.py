@@ -8,7 +8,7 @@ import math
 import pdb#
 
 seed = random.randrange(1000)
-random.seed(seed)#
+random.seed(seed)
 print('seed:', seed)
 
 def round_half_up(n, decimals=0):
@@ -19,6 +19,7 @@ def round_half_up(n, decimals=0):
     return rounded
 
 ##### mutation_functions.r
+#maybe a null function issue. too many lucky mutations? じゃなさそう
 def make_null_function(chance_of_MIC_mutation, max_MIC_change, sd_s_change):
     def null_function():
         if random.uniform(0,1) < chance_of_MIC_mutation:
@@ -55,13 +56,25 @@ class Species():
     def add_genotype(self, n, s=1, MIC=0, ancestors='0', genotype_name=None, genotype_num=1):
         if genotype_num == 1:
             if genotype_name == None:
-                genotype_name = len(genotypes)
-            self.genotypes.append(Genotype(genotype_name, n, s, MIC, ancestors))
+                genotype_name = len(self.genotypes)
+                
+            if genotype_name in [i.name for i in self.genotypes]:
+                ind = [i.name for i in self.genotypes].index(genotype_name)
+                #self.genotypes[ind].n += n
+                self.genotypes[ind] = Genotype(genotype_name, n, s, MIC, ancestors)
+            else:
+                self.genotypes.append(Genotype(genotype_name, n, s, MIC, ancestors))
         else:
             if genotype_name == None:
-                genotype_name = [(len(genotypes) + i) for i in range(genotype_num)]
+                genotype_name = [(len(self.genotypes) + i) for i in range(genotype_num)]
+
             for i in range(genotype_num):
-                self.genotypes.append(Genotype(genotype_name[i], n[i], s[i], MIC[i], ancestors[i]))
+                if genotype_num[i] in [i.name for i in self.genotypes]:
+                    ind = [i.name for i in self.genotypes].index(genotype_num[i])
+                    #self.genotypes[ind].n += n[i]
+                    self.genotypes[ind] = Genotype(genotype_name[i], n[i], s[i], MIC[i], ancestors[i])
+                else:
+                    self.genotypes.append(Genotype(genotype_name[i], n[i], s[i], MIC[i], ancestors[i]))
 
 class Well(list):
     def __init__(self, name):
@@ -122,14 +135,15 @@ def get_MIC(Species):
 
 def calculate_fitness(s, n, MIC, antibiotic):
     MIC_tf = [i < antibiotic for i in MIC]
-    s = [[i,0][true] for i,true in zip(s, MIC_tf)]
+    new_s = [[i,0][true] for i,true in zip(s, MIC_tf)]
     
-    if all([i == 0 for i in s]):
+    if all([i == 0 for i in new_s]):
         print('All individuals have zero fitness')
         return -1
-    
-    w = [i/sum(s) for i in s]
-    w = pd.Series([i/sum(s) for i in s]).cumsum()
+
+    w_pre = [i/sum(new_s)*j for i, j in zip(new_s, n)]
+    w_next = [i/sum(w_pre) for i in w_pre]
+    w = pd.Series(w_next).cumsum()
     return list(w)
 
 def birth_offspring(N, w):
@@ -174,9 +188,12 @@ def run_one_simulation(species, gens, antibiotic, mutant_func, interdependent, c
     for k in range(n_species):
         for i in species[k].genotypes:
             results[k].append((0, i.name, i.n / species[k].N, i.s, i.MIC, i.ancestors))
-        
+
     for gen in range(1, gens+1):
+        globals()['genx'] = gen#
+        
         w = [calculate_fitness(get_s(k), get_n(k), get_MIC(k), antibiotic[gen-1]) for k in species]
+        
         if interdependent:
             if any([i == -1 for i in w]):
                 for k in range(n_species):
@@ -199,14 +216,15 @@ def run_one_simulation(species, gens, antibiotic, mutant_func, interdependent, c
                 species[k] = make_mutants(species[k], ancestor_genotype_names, new_genotype_names, mutant_function)
         
                 for i in range(len(new_genotype_names)):
-                    offspring[k][mutants[k][i]] = len(genotype_names)+i
+                    offspring[k][mutants[k][i]] = len(genotype_names) + i
 
         genotype_ns = [[offspring[k].count(i) for i in range(len(species[k].genotypes))] for k in range(n_species)]
         species = [set_n(species[k], genotype_ns[k]) for k in range(n_species)]
-
+       
         for k in range(n_species):
             for i in species[k].genotypes:
                 results[k].append((gen, i.name, i.n / species[k].N, i.s, i.MIC, i.ancestors))
+
     return results
 
 def start_next_season(results, wells, n_species, N, u):
@@ -266,7 +284,7 @@ def start_next_season(results, wells, n_species, N, u):
                     for i in range(len(new_genotype_names)):
                         ind = new_genotype_names[i][0]
                         next_season[well][k].add_genotype(new_genotype_ns[i], curr_result[ind][3], curr_result[ind][4], curr_result[ind][5], genotype_name=new_genotype_names[i][1])
-            
+
     return next_season
 
 def summarize_results(results, wells, n_species, season, u, rep, gens, mutant_function):
@@ -290,15 +308,14 @@ def tuple_list_to_pd_dataframe(tuple_list):
         
     return pd.DataFrame(dic)
         
-
 ##### adamowicz_et_al_evolution_model_code_example.r
 ### simulation parameters
-reps = 2 # reps per treatment condition ##
-N = 100 # individuals per species ##
-u = 0.1 # mutation rate ##
+reps = 5 # reps per treatment condition ##
+N = 1000 # individuals per species ##
+u = 0.001 # mutation rate ##
 max_interdependent_species = 3 #
-seasons = 5 # number of transfers ##
-gens = 5 # gens per well per season ##
+seasons = 20 # number of transfers ##
+gens = 20 # gens per well per season ##
 wells = 15 #
 antibiotic_change_per_well = 1 # antibiotic concentration increase per well
 
@@ -324,52 +341,45 @@ all_data = pd.DataFrame()
 final = [('well', 'species', 'season', 'alive', 'n_genotypes', 's', 'MIC', 'mutations', 'n_species', 'u', 'rep', 'gens', 'mutant_function')]
 for rep in range(reps):
     for n_species in n_species_in_consortium:
-        '''
         print('rep', rep)
         print('\tgens', gens)
         print('\tu', u)
-        print('\tmutant func', mutant_func_name)
+        print('\tmutant func', mutant_function_name)
         print('\tn_species', n_species)
-        '''
         next_season = make_first_season(wells, n_species, N, u, genotype_prefixes=current_prefixes)
 
         for season in range(seasons):
-            globals()['season'] == season#
+            print('season', season)#
+            globals()['seasonx'] = season#
             results = [run_one_simulation(next_season[well], gens, antibiotic[well], mutant_function, True, current_prefixes[well]) for well in range(wells)]
-            next_season = start_next_season(results, wells, n_species, N, u)
+            next_season = start_next_season(copy.deepcopy(results), wells, n_species, N, u)
             current_prefixes = [f'w{well}s{season}' for well in range(wells)]
-            final = final + summarize_results(results, wells, n_species, season, u, rep, gens, mutant_function_name)
+            final = final + summarize_results(copy.deepcopy(results), wells, n_species, season, u, rep, gens, mutant_function_name)
 
-        #all_data = pd.concat((all_data, final), ignore_index=True)
 all_data = tuple_list_to_pd_dataframe(final)
 all_data.to_csv('all_data.csv', index=False)
-#pdb.set_trace()
+
 ###
 all_data = pd.read_csv('all_data.csv', na_filter=False)
 
-tol_data = all_data[['well', 'rep', 'gens', 'u', 'n_species', 'season', 'mutant_function']].loc[all_data['species'] == 1].loc[all_data['alive']].copy(deep=True)
-
-tol_data = tol_data.groupby(['rep', 'gens', 'u', 'n_species', 'season', 'mutant_function'], as_index=False).last()
-tol_data = tol_data.assign(tolerance = tol_data['well'] - 1)
+tol_data = all_data[['well', 'rep', 'gens', 'u', 'n_species', 'season', 'mutant_function']].loc[all_data['species'] == 0].loc[all_data['alive']==True].copy(deep=True)
+tol_data = tol_data.groupby(['rep', 'gens', 'u', 'n_species', 'season', 'mutant_function'], as_index=False).max()
+tol_data = tol_data.assign(tolerance = tol_data['well'])
 tol_stats = tol_data.groupby(['gens', 'u', 'n_species', 'season', 'mutant_function'], as_index=False).tolerance.agg(['mean', 'std', 'count'])
 tol_data = tol_data.groupby(['gens', 'u', 'n_species', 'season', 'mutant_function'], as_index=False).count()[['gens', 'u', 'n_species', 'season', 'mutant_function']]
 tol_data = tol_data.assign(tolerance_sd = tol_stats['std'].reset_index(drop=True).copy(deep=True), n = tol_stats['count'].reset_index(drop=True).copy(deep=True), tolerance = tol_stats['mean'].reset_index(drop=True).copy(deep=True))
-import seaborn as sns
-sns.lineplot(x='season', y='tolerance', hue = 'n_species', err_style='bars', ci='sd', marker='o', data=tol_data)
-'''
+
+#sns.lineplot(x='season', y='tolerance', hue = 'n_species', err_style='bars', ci='sd', marker='o', data=tol_data)
 error1 = tol_data['tolerance_sd'].loc[tol_data['n_species']==1] / [math.sqrt(i-1) for i in tol_data['n'].loc[tol_data['n_species']==1]]
 error2 = tol_data['tolerance_sd'].loc[tol_data['n_species']==2] / [math.sqrt(i-1) for i in tol_data['n'].loc[tol_data['n_species']==2]]
 error3 = tol_data['tolerance_sd'].loc[tol_data['n_species']==3] / [math.sqrt(i-1) for i in tol_data['n'].loc[tol_data['n_species']==3]]
 
 plt.errorbar(tol_data['season'].loc[tol_data['n_species']==1], tol_data['tolerance'].loc[tol_data['n_species']==1], error1, label = '1', color = 'tab:blue')#
-#plt.errorbar(tol_data['season'].loc[tol_data['n_species']==2], tol_data['tolerance'].loc[tol_data['n_species']==2], error2, label = '2', color = 'tab:orange')#
-#plt.errorbar(tol_data['season'].loc[tol_data['n_species']==3], tol_data['tolerance'].loc[tol_data['n_species']==3], error3, label = '3', color = 'tab:green')#
+plt.errorbar(tol_data['season'].loc[tol_data['n_species']==2], tol_data['tolerance'].loc[tol_data['n_species']==2], error2, label = '2', color = 'tab:orange')#
+plt.errorbar(tol_data['season'].loc[tol_data['n_species']==3], tol_data['tolerance'].loc[tol_data['n_species']==3], error3, label = '3', color = 'tab:green')#
 
 plt.xlabel('transfer')
 plt.ylabel('tolerance (arbitrary)')
 plt.title(f'seed: {seed}')
+plt.legend()
 plt.show()
-
-##only 0.5's have tolerance_sd
-
-'''
