@@ -19,7 +19,6 @@ def round_half_up(n, decimals=0):
     return rounded
 
 ##### mutation_functions.r
-#maybe a null function issue. too many lucky mutations? じゃなさそう
 def make_null_function(chance_of_MIC_mutation, max_MIC_change, sd_s_change):
     def null_function():
         if random.uniform(0,1) < chance_of_MIC_mutation:
@@ -310,13 +309,13 @@ def tuple_list_to_pd_dataframe(tuple_list):
         
 ##### adamowicz_et_al_evolution_model_code_example.r
 ### simulation parameters
-reps = 5 # reps per treatment condition ##
-N = 1000 # individuals per species ##
-u = 0.001 # mutation rate ##
-max_interdependent_species = 3 #
-seasons = 20 # number of transfers ##
-gens = 20 # gens per well per season ##
-wells = 15 #
+reps = 5 # reps per treatment condition
+N = 1000 # individuals per species
+u = 0.001 # mutation rate
+max_interdependent_species = 3
+seasons = 20 # number of transfers
+gens = 20 # gens per well per season
+wells = 15
 antibiotic_change_per_well = 1 # antibiotic concentration increase per well
 
 ### mutation function parameters
@@ -369,7 +368,6 @@ tol_stats = tol_data.groupby(['gens', 'u', 'n_species', 'season', 'mutant_functi
 tol_data = tol_data.groupby(['gens', 'u', 'n_species', 'season', 'mutant_function'], as_index=False).count()[['gens', 'u', 'n_species', 'season', 'mutant_function']]
 tol_data = tol_data.assign(tolerance_sd = tol_stats['std'].reset_index(drop=True).copy(deep=True), n = tol_stats['count'].reset_index(drop=True).copy(deep=True), tolerance = tol_stats['mean'].reset_index(drop=True).copy(deep=True))
 
-#sns.lineplot(x='season', y='tolerance', hue = 'n_species', err_style='bars', ci='sd', marker='o', data=tol_data)
 error1 = tol_data['tolerance_sd'].loc[tol_data['n_species']==1] / [math.sqrt(i-1) for i in tol_data['n'].loc[tol_data['n_species']==1]]
 error2 = tol_data['tolerance_sd'].loc[tol_data['n_species']==2] / [math.sqrt(i-1) for i in tol_data['n'].loc[tol_data['n_species']==2]]
 error3 = tol_data['tolerance_sd'].loc[tol_data['n_species']==3] / [math.sqrt(i-1) for i in tol_data['n'].loc[tol_data['n_species']==3]]
