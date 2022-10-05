@@ -1,22 +1,83 @@
-##### change only calculate fitness to run odes and return final proportions as w
-##### remove olds like MIC and s? s = 1 or r or whatever
-##### question on the original code == overwrite? 289 to 103 model
-##### question what does the t in odes() do? ODES folder
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-#
 from scipy.integrate import odeint
+#from tolerance_odes import odes
+import seaborn as sns
 
 import random
-import copy
 import math
 import pdb#
 
+
+def odes(x, t, alpha, nE, tau_lag, frid=False):
+    '''
+    x: list of initial conditions
+    t: list of times
+    alpha: additional death rate due to antibiotic, as a proportion of max growth rate r
+    nE: number of strains of E. coli
+    tau_lag: list of lag times of each strain
+    frid: when True, dMdt and dLdt = 0 (for use with Fridman-style analysis)
+    '''
+
+    M = x[0]
+    L = x[1]
+
+    # half-saturation constants
+    K_M = 1  #
+    K_L = 1  #
+
+    # resource decay constants
+    kM = 5e-9  #
+    kL = 5e-9  #
+
+    # E
+    for i in range(1, nE + 1):
+        # growth constants
+        locals()[f'rE{i}'] = 1  #
+        locals()[f'kE{i}'] = 5e-9  #
+        locals()[f'tau_lagE{i}'] = tau_lag[i - 1]
+
+        # resource constants
+        locals()[f'cM{i}'] = 0.1  #
+        locals()[f'cL{i}'] = 1.0  #
+
+        # solutions -- starting with Eg1 on x[2] and El1 on x[3], Eg and El occupy alternating indexes for each strain
+        locals()[f'El{i}'] = x[2 * i]
+        locals()[f'Eg{i}'] = x[1 + 2 * i]
+
+        # differential equations
+        locals()[f'dEg{i}dt'] = (1 - alpha) * locals()[f'rE{i}'] * locals()[f'Eg{i}'] * (M / (M + K_M)) * (
+                    L / (L + K_L)) - locals()[f'kE{i}'] * locals()[f'Eg{i}'] + locals()[f'El{i}'] / locals()[
+                                    f'tau_lagE{i}']
+        locals()[f'dEl{i}dt'] = -locals()[f'El{i}'] / locals()[f'tau_lagE{i}']
+
+    # M
+    sigma_cM = 0
+    for i in range(1, nE + 1):
+        sigma_cM += locals()[f'cM{i}'] * locals()[f'Eg{i}'] * (M / (M + K_M)) * (L / (L + K_L))
+
+    dMdt = (-sigma_cM - kM * M) * ([1, 0][frid])
+
+    # L
+    sigma_cL = 0
+    for i in range(1, nE + 1):
+        sigma_cL += locals()[f'cL{i}'] * locals()[f'Eg{i}'] * (M / (M + K_M)) * (L / (L + K_L))
+
+    dLdt = (-sigma_cL - kL * L) * ([1, 0][frid])
+
+    to_return = [dMdt, dLdt]
+    for i in range(1, nE + 1):  ## could probably use list comprehension instead of this for loop
+        to_return.append(locals()[f'dEl{i}dt'])
+        to_return.append(locals()[f'dEg{i}dt'])
+
+    return to_return
+##
+
+#closed start -----
 seed = random.randrange(1000)
-random.seed(seed)
+random.seed(944)
 print('seed:', seed)
 
 def round_half_up(n, decimals=0):
@@ -26,399 +87,153 @@ def round_half_up(n, decimals=0):
         rounded = int(rounded)
     return rounded
 
-##### mutation_functions.r
-def make_null_function(chance_of_MIC_mutation, max_MIC_change, sd_s_change):
+### mutation function
+def make_null_function(max_lag_change):
     def null_function():
-        if random.uniform(0,1) < chance_of_MIC_mutation:
-            MIC = random.uniform(0,1) * max_MIC_change
-            s = 0
-        else:
-            MIC = 0
-            s = random.normalvariate(0, sd_s_change)
-        return (s, MIC)
+        lag_change = random.uniform(0,1) * max_lag_change
+        return lag_change
     return null_function
             
-##### model_functions2.r
+### model functions
 class Genotype():
-    def __init__(self, name, n, s=1, MIC=0, ancestors='0'):
+    def __init__(self, name, n, lag=1, ancestors='0'):
         self.name = name
         self.n = n
-        self.s = s
-        self.MIC = MIC
+        self.lag = lag
         self.ancestors = ancestors
 
     def __str__(self):
-        return "{'name': " + str(self.name) + ", 'n': " + str(self.n) + ", 's': " + str(self.s) + ", 'MIC': " + str(self.MIC) + ", 'ancestors': " + str(self.ancestors) +"}"
+        return "{'name': " + str(self.name) + ", 'n': " + str(self.n) + ", 'lag': " + str(self.lag) + ", 'ancestors': " + str(self.ancestors) +"}"
 
 class Species():
-    def __init__(self, name, N, u):
+    def __init__(self, name, u):
         self.name = name
-        self.N = N
         self.u = u
         self.genotypes = []
 
     def __str__(self):
-        return "{'genotypes': " + str([i.name for i in self.genotypes]) + ", 'N': " + str(self.N) + ", 'u': " + str(self.u) + "}"
+        return "{'genotypes': " + str([i.name for i in self.genotypes]) + ", 'u': " + str(self.u) + "}"
 
-    def add_genotype(self, n, s=1, MIC=0, ancestors='0', genotype_name=None, genotype_num=1):
-        if genotype_num == 1:
-            if genotype_name == None:
-                genotype_name = len(self.genotypes)
-                
-            if genotype_name in [i.name for i in self.genotypes]:
-                ind = [i.name for i in self.genotypes].index(genotype_name)
-                #self.genotypes[ind].n += n
-                self.genotypes[ind] = Genotype(genotype_name, n, s, MIC, ancestors)
-            else:
-                self.genotypes.append(Genotype(genotype_name, n, s, MIC, ancestors))
-        else:
-            if genotype_name == None:
-                genotype_name = [(len(self.genotypes) + i) for i in range(genotype_num)]
-
-            for i in range(genotype_num):
-                if genotype_num[i] in [i.name for i in self.genotypes]:
-                    ind = [i.name for i in self.genotypes].index(genotype_num[i])
-                    #self.genotypes[ind].n += n[i]
-                    self.genotypes[ind] = Genotype(genotype_name[i], n[i], s[i], MIC[i], ancestors[i])
-                else:
-                    self.genotypes.append(Genotype(genotype_name[i], n[i], s[i], MIC[i], ancestors[i]))
-
-class Well(list):
-    def __init__(self, name):
-        list.__init__(self)
-        self.name = name
-
-    def __str__(self):
-        return str([i.name for i in self])
-
-    def add_species(self, N, u, species_name=None, species_num=1):
-        if species_num == 1:
-            if species_name == None:
-                species_name = len(self)
-            self.append(Species(species_name, N, u))
-        else:
-            if species_name == None:
-                species_name = [(len(self) + i) for i in range(species_num)]
-            for i in range(species_num):
-                self.append(Species(species_name[i], N[i], u[i]))
+    def add_genotype(self, genotype):
+        self.genotypes.append(genotype)
     
-class Season(list):
+class Flask(list):
     def __init__(self):
         list.__init__(self)
 
     def __str__(self):
         return str([i.name for i in self])
 
-    def add_well(self, well_name=None, well_num=1):
-        if well_num == 1:
-            if well_name == None:
-                well_name = len(self)
-            self.append(Well(well_name))
-        else:
-            if well_name == None:
-                well_name = [(len(self) + i) for i in range(well_num)]
-            for i in range(well_num):
-                self.append(Well(well_name[i]))
+    def add_species(self, species):
+        self.append(species)
+# closed end -----
 
-def make_first_season(wells, n_species, N, u, genotype_prefixes):
-    first_season = Season()
-
-    first_season.add_well(well_num=wells)
-    for well in range(wells):
-        for k in range(n_species):
-            first_season[well].add_species(N, u)
-            first_season[well][k].add_genotype(N, genotype_name=genotype_prefixes[well]+'_0')
-
-    return first_season
-
-def get_n(Species):
-    return [i.n for i in Species.genotypes]
-'''
-def get_s(Species):
-    return [i.s for i in Species.genotypes]
-
-def get_MIC(Species):
-    return [i.MIC for i in Species.genotypes]
-'''
-
-## road work ahead
-def calculate_fitness(s, n, MIC, antibiotic):
-    MIC_tf = [i < antibiotic for i in MIC]
-    new_s = [[i,0][true] for i,true in zip(s, MIC_tf)]
-    
-    if all([i == 0 for i in new_s]):
-        print('All individuals have zero fitness')
-        return -1
-
-    w_pre = [i/sum(new_s)*j for i, j in zip(new_s, n)]
-    w_next = [i/sum(w_pre) for i in w_pre]
-    w = pd.Series(w_next).cumsum()
-    return list(w)
-
-def calculate_fitness(init_conc, species, Ta):
-    '''
-    init_conc:list [init_M, init_L]
-    species:Species
-    Ta:int antibiotic duration in hr
-
-    return relative proportions of genotypes after phase 1 and 2, as cumulative sum
-    '''
-
-def run_phase(odes, init_cond, t_interval, init_lag, phase, frid=False):
-    if phase == 1:
-        alpha = 2
-    elif phase == 2:
-        alpha = 0
-    
-    sol = odeint(odes, init_cond, t_interval, args=(alpha, init_lag, frid)) ## when alpha = -2, effective growth rate = -r
-    para = [t_interval, init_lag] # removed strain
-    return sol, para
-
-def regular_mono(init_res, init_freq, init_lag, Ta, frid=False):
-    '''
-    init_conc:list [init_M, init_L]
-    init_freq:list of frequencies of each genotype
-    init_lag:list of lag times of each genotype
-    Ta: length of killing phase
-    frid: when True, dMdt and dLdt = 0 (for determining effective starting population)
-    '''
-    # init_cond
-    pops = [0]*len(init_freq) * 2
-    pops[1::2] = init_freq
-    
-    init_cond = [init_res] + pops
-    
-    # time intervals
+# road work ahead -----
+def run_tolerance(init_cond, lags, Ta):
     t_interval1 = np.linspace(0, Ta, 1000)
-    t_interval2 = np.linspace(0, Ta*2, 1000) ## arbitrary
+    sol1 = odeint(odes, init_cond, t_interval1, args=(2, 1, lags, False)) # false for now
 
-    # run phases
-    sol1, para1 = run_phase(odes, init_cond, t_interval1, init_lag, phase=1)
-    sol2, para2 = run_phase(odes, sol1[-1, :], t_interval2, init_lag, phase=2, frid=frid)
+    t_interval2 = np.linspace(0, 20, 1000) # arbitrary
+    sol2 = odeint(odes, sol1[-1, :], t_interval2, args=(0, 1, lags, False))
 
-    # convert sols to w
-    totals = [sol2[i] + sol2[i + 1] for i in range(2, len(sol2), 2)] # confirmed
-    totals_proportion = [i/sum(totals) for i in totals]
-    w = pd.Series(totals_proportion).cumsum() ##
+    return sol2
 
-    return list(w)
+# road work behind -----
 
-## road work ahead
+def run_one_simulation(flask, init_R, Ta, rep, gen, mutation_function):
+    final_sub = []
+    for genotype in flask[0].genotypes:
+        final_sub.append((rep, gen, flask[0].name, genotype.name, genotype.n, Ta))
 
-def birth_offspring(N, w):
-    chance = [random.uniform(0,1) for i in range(N)]
-    return [[i < j for j in w].index(True) for i in chance]
+    # run phases 1, 2
+    init_cond = init_R
+    for genotype in flask[0].genotypes:
+        init_cond.append(genotype.n)
+        init_cond.append(0) # for each genotype, El = n and Eg = 0
+    lags = [i.lag for i in flask[0].genotypes]
+    sol = run_tolerance(init_cond, lags, Ta)
 
-def get_mutants(Species):
-    chance = [random.uniform(0,1) for i in range(Species.N)]
-    chance_tf = [i < Species.u for i in chance]
-    return [ind for ind, true in enumerate(chance_tf) if true]
+    # store per-gen data for graphing
+    per_gen_data = (gen, tuple([i.name for i in flask[0].genotypes]), tuple(lags), sol)
 
-def make_mutants(Species, ancestor_genotype_names, new_genotype_names, mutant_function):
-    for i in range(len(ancestor_genotype_names)):
-        ancestor_name = ancestor_genotype_names[i][1]
-        ancestor = Species.genotypes[ancestor_genotype_names[i][0]]
-        
-        Species.add_genotype(genotype_name=new_genotype_names[i], n=1, s=max([0, ancestor.s+mutant_function()[0]]), MIC=max([0, ancestor.MIC+mutant_function()[1]]), ancestors= ancestor_name+' '+ancestor.ancestors)
-    return Species
+    # counts after phases
+    genotype_n_sep = sol[-1, 2:]
+    genotype_n_unsep = [ genotype_n_sep[i] + genotype_n_sep[i+1] for i in range(0, len(genotype_n_sep), 2) ]
+    genotype_freq = [ i/sum(genotype_n_unsep) for i in genotype_n_unsep ] ## faster to use numpy or sth?
 
-def set_n(Species, genotype_ns):
-    if sum(genotype_ns) != Species.N: #
-        print('Sum of n != N defined in Species')
-        return -1
-    
-    for i in range(len(Species.genotypes)):
-        Species.genotypes[i].n = genotype_ns[i]
-    return Species
+    if sum(genotype_freq) != 1.0: #
+        print(genotype_freq)
+        return "stop freq"
+    print('genotype_freq', genotype_freq)
 
-def run_one_simulation(species, gens, antibiotic, mutant_func, interdependent, current_prefix):
-    n_species = len(species)
+    if len(flask[0].genotypes) != len(genotype_n_unsep): #
+        return "stop len"
+    print('len flask to unsep', len(flask[0].genotypes) == len(genotype_n_unsep))
 
-    antibiotic = [antibiotic]*gens
+    # mutation
+    mutant_n = round_half_up(flask[0].u * sum(genotype_n_unsep)) ## use probability as proportion?
+    mutants = random.choices(range(len(genotype_n_unsep)), weights=genotype_freq, k=mutant_n)
 
-    results = [[('gen', 'genotypes', 'freq', 's', 'MIC', 'ancestors')] for i in range(n_species)]
-    
-    if interdependent:
-        if any([len(i.genotypes) == 0 for i in species]):
-            for k in range(n_species):
-                results[k].append((-1, '-1', -1, -1, -1, '-1'))
-            return results
+    st_ct = len(flask[0].genotypes)
+    for i, anc_i in enumerate(mutants):
+        ancestor = flask[0].genotypes[anc_i]
 
-    for k in range(n_species):
-        for i in species[k].genotypes:
-            results[k].append((0, i.name, i.n / species[k].N, i.s, i.MIC, i.ancestors))
+        genotype_n_unsep[anc_i] -= 1
 
-    for gen in range(1, gens+1):
-        globals()['genx'] = gen#
-        
-        w = [calculate_fitness(get_s(k), get_n(k), get_MIC(k), antibiotic[gen-1]) for k in species]
-        
-        if interdependent:
-            if any([i == -1 for i in w]):
-                for k in range(n_species):
-                    results[k].append((-1, '-1', -1, -1, -1, '-1'))
-                return results
+        flask[0].add_genotype(Genotype(f'E{st_ct + i}g{gen}', n = 1, lag = max([0, ancestor.lag + mutation_function()]), ancestors = ancestor.name + ' ' + ancestor.ancestors))
 
-        pop_sizes = [i.N for i in species]
-        offspring = [birth_offspring(pop_sizes[k], w[k]) for k in range(n_species)]
+    # register final counts of original genotypes in Flask flask
+    for i in range(len(flask[0].genotypes)):
+        flask[0].genotypes[i].n = genotype_n_unsep[i]
 
-        mutants = [get_mutants(k) for k in species]
+    return final_sub, per_gen_data
 
-        for k in range(n_species):
-            if len(mutants[k]) > 0:
-                genotype_names = [i.name for i in species[k].genotypes]
-                max_genotype_name = max([int(i.split('_')[-1]) for i in genotype_names])
-
-                new_genotype_names = [f'{current_prefix}_{max_genotype_name + i}' for i in range(1, len(mutants[k])+1)]
-                ancestor_genotype_names = [(offspring[k][i], species[k].genotypes[offspring[k][i]].name) for i in mutants[k]]
-
-                species[k] = make_mutants(species[k], ancestor_genotype_names, new_genotype_names, mutant_function)
-        
-                for i in range(len(new_genotype_names)):
-                    offspring[k][mutants[k][i]] = len(genotype_names) + i
-
-        genotype_ns = [[offspring[k].count(i) for i in range(len(species[k].genotypes))] for k in range(n_species)]
-        species = [set_n(species[k], genotype_ns[k]) for k in range(n_species)]
-       
-        for k in range(n_species):
-            for i in species[k].genotypes:
-                results[k].append((gen, i.name, i.n / species[k].N, i.s, i.MIC, i.ancestors))
-
-    return results
-
-def start_next_season(results, wells, n_species, N, u):
-    next_season = Season()
-    next_season.add_well(well_num=wells)
-    
-    for well in range(wells):
-        if well == 0:
-            for k in range(n_species):
-                max_gen = results[well][k][-1][0]
-                curr_result = [i for i in results[well][k] if (i[0] == max_gen and i[2] > 0)]
-
-                genotype_names = [(ind, val[1]) for ind, val in enumerate(curr_result)]
-                genotype_ns = [i[2]*N for i in curr_result]
-                
-                genotypes_pre = [[genotype_names[i][1]]*round_half_up(genotype_ns[i]) for i in range(len(genotype_names))]
-                genotypes = [element for sublist in genotypes_pre for element in sublist]
-
-                new_genotype_names = genotype_names
-                new_genotype_ns = genotype_ns
-
-                next_season[well].add_species(N, u)
-                for i in range(len(new_genotype_names)):
-                    ind = new_genotype_names[i][0]
-                    next_season[well][k].add_genotype(new_genotype_ns[i], curr_result[ind][3], curr_result[ind][4], curr_result[ind][5], genotype_name=new_genotype_names[i][1])
-        else:
-            for k in range(n_species):
-                next_season[well].add_species(N, u)
-                draw_wells = [results[well-1][k], results[well][k]]
-                extinction = [any([(i[2] == -1) for i in draw_wells[0]]), any([(i[2] == -1) for i in draw_wells[1]])]
-                if all(extinction):
-                    cells_per_well = [0, 0]
-                elif extinction[0] and not extinction[1]:
-                    cells_per_well = [0, N]
-                elif extinction[1] and not extinction[0]:
-                    cells_per_well = [N, 0]
-                else:
-                    cells_per_well = [N/2, N/2]
-                for draw_well in range(2):
-                    if cells_per_well[draw_well] == 0:
-                        continue
-                    max_gen = draw_wells[draw_well][-1][0]
-                    curr_result = [i for i in draw_wells[draw_well] if (i[0] == max_gen and i[2] > 0)]
- 
-                    genotype_names = [(ind, val[1]) for ind, val in enumerate(curr_result)]
-                    genotype_ns = [i[2]*N for i in curr_result]
-                    
-                    genotypes_pre = [[genotype_names[i]]*round_half_up(genotype_ns[i]) for i in range(len(genotype_names))]
-                    genotypes = [element for sublist in genotypes_pre for element in sublist]
-                    genotypes = random.sample(genotypes, round_half_up(cells_per_well[draw_well]))
-
-                    new_genotype_names = pd.Series(genotypes).unique()
-                    new_genotype_names = list(new_genotype_names)
-                    new_genotype_names.sort()
-                    new_genotype_ns = [genotypes.count(i) for i in new_genotype_names]
-
-                    for i in range(len(new_genotype_names)):
-                        ind = new_genotype_names[i][0]
-                        next_season[well][k].add_genotype(new_genotype_ns[i], curr_result[ind][3], curr_result[ind][4], curr_result[ind][5], genotype_name=new_genotype_names[i][1])
-
-    return next_season
-
-def summarize_results(results, wells, n_species, season, u, rep, gens, mutant_function):
-    final = []
-    for well in range(wells):
-        for k in range(n_species):
-            curr_result = results[well][k]
-            if any([i[0] == -1 for i in curr_result]):
-                final.append((well, k, season, False, 0, np.nan, np.nan, np.nan, n_species, u, rep, gens, mutant_function))
-                continue
-            max_gen = curr_result[-1][0]
-            curr_result = [i for i in curr_result if (i[0] == max_gen and i[2] > 0)]
-
-            final.append((well, k, season, True, len(curr_result), sum([i[3]*i[2] for i in curr_result]), sum([i[4]*i[2] for i in curr_result]), sum([(len(i[5].split(' '))-1)*i[2] for i in curr_result]), n_species, u, rep, gens, mutant_function))## n_genotypes originally = len(curr_result['genotypes'])
-    return final
-
+# keep for now -----
 def tuple_list_to_pd_dataframe(tuple_list):
     dic = {}
     for ind in range(len(tuple_list[0])):
         dic[tuple_list[0][ind]] = [i[ind] for i in tuple_list[1:]]
         
     return pd.DataFrame(dic)
-        
-##### adamowicz_et_al_evolution_model_code_example.r
-### simulation parameters
-reps = 5 # reps per treatment condition
-N = 1000 # individuals per species
-u = 0.001 # mutation rate
-max_interdependent_species = 3
-seasons = 20 # number of transfers
-gens = 20 # gens per well per season
-wells = 15
-antibiotic_change_per_well = 1 # antibiotic concentration increase per well
+# keep for now -----
 
-### mutation function parameters
-chance_of_MIC_mutation = 0.5 # probability that a mutation is a mutation in MIC
-max_MIC_change = antibiotic_change_per_well * 1.1 # max mutation-induced MIC change
-sd_s_change = 0.1 # if a mutation affects growth rate, the change is a normally-distributed variable centered on zero with this sd
+# closed start -----
+### simulation parameters
+reps = 1
+u = 0.001 # mutation rate
+gens = 5 # gens per well per season
+
+init_R = [100, 100] # starting [M, L] of each new growth flask
+Ta = 3 # length of anibiotic treatment
+max_lag_change = 1.1 # max mutation-induced lag change ## orig. antibiotic_change_per_well * 1.1
 
 ### make mutation function
 # null_function grabs MIC mutations from a uniform distribution
-null_function = make_null_function(chance_of_MIC_mutation = chance_of_MIC_mutation, max_MIC_change = max_MIC_change, sd_s_change = sd_s_change)
+null_function = make_null_function(max_lag_change)
 
-### choose which mutation function to use
-mutant_function = null_function
-mutant_function_name = 'null'
-
-### model
-n_species_in_consortium = [i for i in range(1, max_interdependent_species+1)]
-antibiotic = [i*antibiotic_change_per_well for i in range(wells)]
-current_prefixes = [f'w{well}s0' for well in range(wells)]
-
-all_data = pd.DataFrame()
-final = [('well', 'species', 'season', 'alive', 'n_genotypes', 's', 'MIC', 'mutations', 'n_species', 'u', 'rep', 'gens', 'mutant_function')]
+### run simulation
+final = [('rep', 'gen', 'species', 'genotype', 'n', 'Ta')]
+per_gen_data = []
 for rep in range(reps):
-    for n_species in n_species_in_consortium:
-        print('rep', rep)
-        print('\tgens', gens)
-        print('\tu', u)
-        print('\tmutant func', mutant_function_name)
-        print('\tn_species', n_species)
-        next_season = make_first_season(wells, n_species, N, u, genotype_prefixes=current_prefixes)
 
-        for season in range(seasons):
-            print('season', season)#
-            globals()['seasonx'] = season#
-            results = [run_one_simulation(next_season[well], gens, antibiotic[well], mutant_function, True, current_prefixes[well]) for well in range(wells)]
-            next_season = start_next_season(copy.deepcopy(results), wells, n_species, N, u)
-            current_prefixes = [f'w{well}s{season}' for well in range(wells)]
-            final = final + summarize_results(copy.deepcopy(results), wells, n_species, season, u, rep, gens, mutant_function_name)
+    # set up first species
+    flask = Flask()
+    flask.add_species(Species('Escherichia coli', 0.001))
+    flask[0].add_genotype(Genotype('E0g0', n = 1, lag = 1, ancestors = '0')) ## lag cannot be 0 to avoid divide by zero
+# closed end -----
+    # run simulation
+    for gen in range(gens):
+        final_sub, per_gen_data_sub = run_one_simulation(flask, init_R, Ta, rep, gen, null_function)
+        for row in final_sub:
+            final.append(row)
+        per_gen_data.append(per_gen_data_sub)
 
-all_data = tuple_list_to_pd_dataframe(final)
-all_data.to_csv('all_data.csv', index=False)
+final_pd = tuple_list_to_pd_dataframe(final)
+final_pd.to_csv('final.csv', index=False)
 
-###
+### plot
+
+'''
 all_data = pd.read_csv('all_data.csv', na_filter=False)
 
 tol_data = all_data[['well', 'rep', 'gens', 'u', 'n_species', 'season', 'mutant_function']].loc[all_data['species'] == 0].loc[all_data['alive']==True].copy(deep=True)
@@ -441,3 +256,4 @@ plt.ylabel('tolerance (arbitrary)')
 plt.title(f'seed: {seed}')
 plt.legend()
 plt.show()
+'''
