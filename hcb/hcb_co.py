@@ -329,4 +329,5 @@ if inp == 's':
     plt.show()
     
 elif inp == 'c':
+    regular(10, 10, 10, 6, tau_lag=[[3, 6, 9], [6]], n=[3, 1])
     pass
