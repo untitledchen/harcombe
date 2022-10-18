@@ -195,7 +195,7 @@ def run_tolerance(init_cond, lags, Ta, names_info): # gens for context
 
     t_interval1 = np.linspace(0, Ta, 1000)
     sol1 = odeint(odes, init_cond, t_interval1, args=([2, 2], n, lags, False)) # false for now
-    if globals()['genx'] == 49:
+    if globals()['genx'] == 0:
         j = 0
         for i in range(0, int(sol1[:, 3:].shape[1]), 2):
             plt.plot(t_interval1, np.add(sol1[:, i + 3], sol1[:, i + 4]), label= f'{round_half_up(lags_undo[j], 3)}, {names_info[j]}') # total pop
@@ -206,7 +206,7 @@ def run_tolerance(init_cond, lags, Ta, names_info): # gens for context
     t_interval2 = np.linspace(0, 20, 1000) # arbitrary
     sol2 = odeint(odes, sol1[-1, :], t_interval2, args=([0, 0], n, lags, False))
 
-    if globals()['genx'] == 49:
+    if globals()['genx'] == 0:
         j = 0
         for i in range(0, int(sol2[:, 3:].shape[1]), 2):
             plt.plot(t_interval2, np.add(sol2[:, i + 3], sol2[:, i + 4]), label= f'{round_half_up(lags_undo[j], 3)}, {names_info[j]}') # total pop
@@ -289,7 +289,7 @@ reps = 1
 u = 0.001 # mutation rate
 gens = 50
 
-init_R = [100, 100, 100] # starting [M, A, L] of each new growth flask ## should it be just lactose?
+init_R = [0.01, 0.01, 100] # starting [M, A, L] of each new growth flask ## should it be just lactose?
 Ta = 3 # length of anibiotic treatment
 max_lag_change = 1.1 # max mutation-induced lag change ## orig. antibiotic_change_per_well * 1.1
 
@@ -320,8 +320,8 @@ for rep in range(reps):
             final.append(row)
         #per_gen_data.append(per_gen_data_sub)
 
-#final_pd = tuple_list_to_pd_dataframe(final)
-#final_pd.to_csv('final.csv', index=False)
+final_pd = tuple_list_to_pd_dataframe(final)
+final_pd.to_csv('final_co.csv', index=False)
 
 ### plot
 

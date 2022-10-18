@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 #import matplotlib.colormap
 
 from scipy.integrate import odeint
-#from tolerance_odes import odes
+from tolerance_odes import odes_mono
 import seaborn as sns
 
 import random
@@ -14,76 +14,15 @@ import pdb#
 
 #question
 # should i start with 0s in init_R?
+# check mutation round_half_up
+# resources 500 mics/1 ml, but genetic composition won't change
+# more tuples
 
-
-def odes(x, t, alpha, tau_lag, frid=False):
-    nE = len(tau_lag)
-    '''
-    x: list of initial conditions
-    t: list of times
-    alpha: additional death rate due to antibiotic, as a proportion of max growth rate r
-    nE: number of strains of E. coli
-    tau_lag: list of lag times of each strain
-    frid: when True, dMdt and dLdt = 0 (for use with Fridman-style analysis)
-    '''
-
-    M = x[0]
-    L = x[1]
-
-    # half-saturation constants
-    K_M = 1  #
-    K_L = 1  #
-
-    # resource decay constants
-    kM = 5e-9  #
-    kL = 5e-9  #
-
-    # E
-    for i in range(1, nE + 1):
-        # growth constants
-        locals()[f'rE{i}'] = 1  #
-        locals()[f'kE{i}'] = 5e-9  #
-        locals()[f'tau_lagE{i}'] = tau_lag[i - 1]
-
-        # resource constants
-        locals()[f'cM{i}'] = 0.1  #
-        locals()[f'cL{i}'] = 1.0  #
-
-        # solutions -- starting with Eg1 on x[2] and El1 on x[3], Eg and El occupy alternating indexes for each strain
-        locals()[f'El{i}'] = x[2 * i]
-        locals()[f'Eg{i}'] = x[1 + 2 * i]
-
-        # differential equations
-        locals()[f'dEg{i}dt'] = (1 - alpha) * locals()[f'rE{i}'] * locals()[f'Eg{i}'] * (M / (M + K_M)) * (
-                    L / (L + K_L)) - locals()[f'kE{i}'] * locals()[f'Eg{i}'] + locals()[f'El{i}'] / locals()[
-                                    f'tau_lagE{i}']
-        locals()[f'dEl{i}dt'] = -locals()[f'El{i}'] / locals()[f'tau_lagE{i}']
-
-    # M
-    sigma_cM = 0
-    for i in range(1, nE + 1):
-        sigma_cM += locals()[f'cM{i}'] * locals()[f'Eg{i}'] * (M / (M + K_M)) * (L / (L + K_L))
-
-    dMdt = (-sigma_cM - kM * M) * ([1, 0][frid])
-
-    # L
-    sigma_cL = 0
-    for i in range(1, nE + 1):
-        sigma_cL += locals()[f'cL{i}'] * locals()[f'Eg{i}'] * (M / (M + K_M)) * (L / (L + K_L))
-
-    dLdt = (-sigma_cL - kL * L) * ([1, 0][frid])
-
-    to_return = [dMdt, dLdt]
-    for i in range(1, nE + 1):  ## could probably use list comprehension instead of this for loop
-        to_return.append(locals()[f'dEl{i}dt'])
-        to_return.append(locals()[f'dEg{i}dt'])
-
-    return to_return
-##
-
-seed = random.randrange(1000)
-random.seed(seed)
+globals()['seed'] = random.randrange(1000)
+random.seed(seed) #804 is odd #967 w gen 50 and ta 4
 print('seed:', seed)
+
+plt.rcParams["axes.prop_cycle"] = plt.cycler("color", plt.cm.tab20.colors) #grabbed from stackoverflow
 
 def round_half_up(n, decimals=0):
     multiplier = 10 ** decimals
@@ -132,112 +71,122 @@ class Flask(list):
     def add_species(self, species):
         self.append(species)
 
-def run_tolerance(init_cond, lags, Ta, gens_info): # gens for context
-    plt.rcParams["axes.prop_cycle"] = plt.cycler("color", plt.cm.tab20.colors) #grabbed from stackoverflow
+def run_phase(init_cond, lags, t_limit, phase, gens_info):
+    alpha = [2,0][phase-1]
+    t_interval = np.linspace(0, t_limit, 1000)
+    sol = odeint(odes_mono, init_cond, t_interval, args=(alpha, lags, False))
 
-    t_interval1 = np.linspace(0, Ta, 1000)
-    sol1 = odeint(odes, init_cond, t_interval1, args=(2, lags, False)) # false for now
-    # plt.plot(t_interval1, sol1[:, 2], label = 'lagging')
-    # plt.plot(t_interval1, sol1[:, 3], label='growing')
-    # plt.legend()
-    # plt.show()
-    if globals()['genx'] == 49:
-        #freq = [ (sol2[:, i + 3] + sol2[:, i + 2]) / sum(sol2[i, 2:]) for i in range(0, int(sol2[:, 2:].shape[1]) // 2, 2)]
+    if globals()['genx'] == 19:
         j = 0
-        for i in range(0, int(sol1[:, 2:].shape[1]), 2):
-            plt.plot(t_interval1, np.add(sol1[:, i + 2], sol1[:, i + 3]), label= f'{round_half_up(lags[j], 3)}, gen:{gens_info[j]}') # total pop
+        for i in range(0, int(sol[:, 2:].shape[1]), 2):
+            plt.plot(t_interval, np.add(sol[:, i + 2], sol[:, i + 3]), label= f'{round_half_up(lags[j], 3)}, gen:{gens_info[j]}') # total pop
             j += 1
+        plt.plot(t_interval, sol[:, 0], label='met', color='r')
+        plt.plot(t_interval, sol[:, 1], label='lac', color='b')
         plt.legend(loc='center right')
+        plt.title(f'seed {seed}')
         plt.show()
 
-    t_interval2 = np.linspace(0, 20, 1000) # arbitrary
-    sol2 = odeint(odes, sol1[-1, :], t_interval2, args=(0, lags, False))
+    return sol
 
-    if globals()['genx'] == 49:
-        #freq = [ (sol2[:, i + 3] + sol2[:, i + 2]) / sum(sol2[i, 2:]) for i in range(0, int(sol2[:, 2:].shape[1]) // 2, 2)]
-        j = 0
-        for i in range(0, int(sol2[:, 2:].shape[1]), 2):
-            plt.plot(t_interval2, np.add(sol2[:, i + 2], sol2[:, i + 3]), label= f'{round_half_up(lags[j], 3)}, gen:{gens_info[j]}') # total pop
-            j +=1
-        plt.legend(loc='center right')
-        plt.show()
-    # plt.plot(t_interval2, sol2[:, 2], label = 'lagging')
-    # plt.plot(t_interval2, sol2[:, 3], label='growing')
-
-    return sol2
-
-def run_one_simulation(flask, init_R, Ta, rep, gen, mutation_function):
-    final_sub = []
-    for genotype in flask[0].genotypes:
-        final_sub.append((rep, gen, flask[0].name, genotype.name, genotype.n, genotype.lag, Ta))
-
-    # run phases 1, 2
-    init_cond = init_R
-    for genotype in flask[0].genotypes:
-        init_cond.append(genotype.n)
-        init_cond.append(0) # for each genotype, El = n and Eg = 0
-    lags = [i.lag for i in flask[0].genotypes]
-    gens_info = [i.name.split('g')[1] for i in flask[0].genotypes] #
-    sol = run_tolerance(init_cond, lags, Ta, gens_info)
-
-    # store per-gen data for graphing
-    #per_gen_data_sub = (gen, tuple([i.name for i in flask[0].genotypes]), tuple(lags), sol)
-
-    # counts after phases
-    genotype_n_sep = sol[-1, 2:]
-    genotype_n_unsep = [ genotype_n_sep[i] + genotype_n_sep[i+1] for i in range(0, len(genotype_n_sep), 2) ]
-    genotype_freq = [ i/sum(genotype_n_unsep) for i in genotype_n_unsep ] ## faster to use numpy or sth?
+# edited 10/17: returns genotype_n_sep edited
+def generate_mutants(genotype_n_sep, u, mutation_function, gen):
+    genotype_n_growing = genotype_n_sep[1::2] # makes a deep copy, apparently
+    genotype_freq = [i / sum(genotype_n_growing) for i in genotype_n_growing]  ## faster to use numpy or sth?
 
     if round_half_up(sum(genotype_freq)) != 1: #
         print(genotype_freq)
         print("stop freq")
         return -1
-    #print('genotype_freq', genotype_freq)
 
-    if len(flask[0].genotypes) != len(genotype_n_unsep): #
-        print("stop len")
-        return -1
-
-    # mutation
     # Adamowicz-based
-    chance = [random.uniform(0, 1) for i in range(round_half_up(sum(genotype_n_unsep)))]
-    chance_tf = [i < flask[0].u for i in chance]
+    chance = [random.uniform(0, 1) for i in range(round_half_up(sum(genotype_n_growing)))]
+    chance_tf = [i < u for i in chance]
     mutant_n = sum(chance_tf)
-    print(mutant_n)#
+    print(mutant_n, end=' ')  #
 
     if mutant_n != 0:
-        #print('mutant_n', mutant_n)  # make sure mutant frequency is reasonable - 1's and 0's
-        mutants = random.choices(range(len(genotype_n_unsep)), weights=genotype_freq, k=mutant_n)
+        mutants = random.choices(range(len(genotype_n_growing)), weights=genotype_freq, k=mutant_n)
 
-        st_ct = len(flask[0].genotypes)
+        genotype_ct = len(flask[0].genotypes)
         for i, anc_i in enumerate(mutants):
             ancestor = flask[0].genotypes[anc_i]
 
-            genotype_n_unsep[anc_i] -= 1
+            genotype_n_sep[2*anc_i + 1] -= 1
+            genotype_n_sep.append(1)
+            genotype_n_sep.append(0)
 
-            flask[0].add_genotype(Genotype(f'E{st_ct + i}g{gen}', n = 1, lag = max([0, ancestor.lag + mutation_function()]), ancestors = ancestor.name + ' ' + ancestor.ancestors))
+            flask[0].add_genotype(Genotype(f'E{genotype_ct + i}g{gen}', n=1, lag=max([0, ancestor.lag + mutation_function()]),
+                                           ancestors=ancestor.name + ' ' + ancestor.ancestors))
 
-    # register final counts of genotypes in Flask flask
-    for i in range(len(genotype_n_unsep)):
-        flask[0].genotypes[i].n = genotype_n_unsep[i]
+    return genotype_n_sep
 
-    return final_sub
+def run_one_simulation(flask, init_R, Ta, rep, gen, mutation_function):
+    final_sub = []
 
-# keep for now -----
-def tuple_list_to_pd_dataframe(tuple_list):
-    dic = {}
-    for ind in range(len(tuple_list[0])):
-        dic[tuple_list[0][ind]] = [i[ind] for i in tuple_list[1:]]
-        
-    return pd.DataFrame(dic)
-# keep for now -----
+    # init_cond1
+    init_cond1 = list(init_R)
+    for genotype in flask[0].genotypes: # for each genotype, El = n and Eg = 0
+        init_cond1.append(genotype.n)
+        init_cond1.append(0)
+    lags1 = [i.lag for i in flask[0].genotypes]
+    gens_info1 = [i.name.split('g')[1] for i in flask[0].genotypes] #
+
+    # phase 1
+    sol1 = run_phase(init_cond1, lags1, Ta, 1, gens_info1)
+
+    # collect 1
+    #pdb.set_trace()
+    genotype_n_sep1 = list(sol1[-1, 2:])
+    print('gen sep1', genotype_n_sep1) #
+
+    # append 1
+    genotype_n_unsep1 = [genotype_n_sep1[i] + genotype_n_sep1[i + 1] for i in range(0, len(genotype_n_sep1), 2)]
+    for i, genotype in enumerate(flask[0].genotypes):
+        final_sub.append((rep, gen, 1, flask[0].name, genotype.name, genotype_n_unsep1[i], genotype.lag, Ta))
+
+    # mutation
+    genotype_n_sep_mut = generate_mutants(copy.deepcopy(genotype_n_sep1), flask[0].u, mutation_function, gen)
+    #print('gen sup mut', genotype_n_sep_mut) #
+
+    # init_cond2
+    init_cond2 = list(init_R)
+    for i in range(0, len(genotype_n_sep_mut), 2):
+        init_cond2.append(genotype_n_sep_mut[i])
+        init_cond2.append(genotype_n_sep_mut[i + 1])
+    print('init cond2', init_cond2) #
+    lags2 = [i.lag for i in flask[0].genotypes]
+    gens_info2 = [i.name.split('g')[1] for i in flask[0].genotypes] #
+
+    # phase 2
+    sol2 = run_phase(init_cond2, lags2, 20, 2, gens_info2)
+
+    # collect 2
+    genotype_n_sep2 = list(sol2[-1, 2:])
+    print('gen sep2', genotype_n_sep2)  #
+    genotype_n_unsep2 = [genotype_n_sep2[i] + genotype_n_sep2[i+1] for i in range(0, len(genotype_n_sep2), 2)]
+
+    # register final counts of genotypes in flask
+    for i in range(len(genotype_n_unsep2)):
+        flask[0].genotypes[i].n = genotype_n_unsep2[i]
+
+    # append 2
+    for genotype in flask[0].genotypes:
+        final_sub.append((rep, gen, 2, flask[0].name, genotype.name, genotype.n/2, genotype.lag, Ta)) # half the population pipetted into the next trial
+
+    #print('end r', sol2[-1, :2])
+    init_R_new = init_R #
+    #init_R_new = (init_R[0] + sol2[-1][0]/2, init_R[1] + sol2[-1][1]/2)
+    return final_sub, init_R_new
 
 ### simulation parameters
 reps = 1
 u = 0.001 # mutation rate
-gens = 50
+gens = 20
 
-init_R = [100, 100] # starting [M, L] of each new growth flask
+init_R = (1000, 1000) # starting (M, L) of each new growth flask
+init_n = 10 # starting E. coli population
+init_lag = 1 # starting E. coli lag
 Ta = 3 # length of anibiotic treatment
 max_lag_change = 1.1 # max mutation-induced lag change ## orig. antibiotic_change_per_well * 1.1
 
@@ -246,25 +195,27 @@ max_lag_change = 1.1 # max mutation-induced lag change ## orig. antibiotic_chang
 null_function = make_null_function(max_lag_change)
 
 ### run simulation
-final = [('rep', 'gen', 'species', 'genotype', 'n', 'lag', 'Ta')]
+final = [('rep', 'gen', 'phase_end', 'species', 'genotype', 'n', 'lag', 'Ta')]
 per_gen_data = []
 for rep in range(reps):
 
     # set up first species
     flask = Flask()
     flask.add_species(Species('Escherichia coli', u))
-    flask[0].add_genotype(Genotype('E0g0', n = 1, lag = 1, ancestors = '0')) ## lag cannot be 0 to avoid divide by zero
+    flask[0].add_genotype(Genotype('E0g0', init_n, init_lag, ancestors = '0')) ## lag cannot be 0 to avoid divide by zero
+
+    final.append((rep, 0, 0, 'Escherichia coli', 'E0g0', init_n, init_lag, '0'))
 
     # run simulation
     for gen in range(gens):
         globals()['genx'] = gen
-        final_sub = run_one_simulation(flask, copy.deepcopy(init_R), Ta, rep, gen, null_function)
+        final_sub, init_R = run_one_simulation(flask, init_R, Ta, rep, gen, null_function)
         for row in final_sub:
             final.append(row)
-        #per_gen_data.append(per_gen_data_sub)
 
-final_pd = tuple_list_to_pd_dataframe(final)
-final_pd.to_csv('final.csv', index=False)
+#pdb.set_trace()
+final_pd = pd.DataFrame(final[1:], columns = list(final[0]))
+final_pd.to_csv('final_mono.csv', index=False)
 
 ### plot
 
