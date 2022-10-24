@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 
 from scipy.integrate import odeint
 from tolerance_odes import odes_co
-import seaborn as sns
 
 import random
 import copy
@@ -13,13 +12,14 @@ import pdb#
 
 #question
 ## should 105 mutants start lagging?
+## -lag pop in gen 2 only: -= 1 in mutation probably
 # no 0.1 K_M
 # check mutation round_half_up
 # assuming genetic composition stays exactly the same during 500 mic transfer
 # more tuples
 
 globals()['seed'] = random.randrange(1000)
-random.seed(891) #891
+random.seed(seed) #891
 print('seed:', seed)
 
 plt.rcParams["axes.prop_cycle"] = plt.cycler("color", plt.cm.tab20.colors) #grabbed from stackoverflow
@@ -97,7 +97,7 @@ def run_phase(init_cond, lags, t_limit, phase, names):
 
 # edited 10/17: returns genotype_n_sep edited
 def generate_mutants(genotype_n_sep, nE, u, mutation_function, gen):
-    genotype_n_growing = [genotype_n_sep[1:(nE + 1):2], genotype_n_sep[(nE + 1)::2]] # makes a deep copy, apparently    ##
+    genotype_n_growing = [genotype_n_sep[1:(2*nE + 1):2], genotype_n_sep[(2*nE + 1)::2]] # makes a deep copy, apparently    ##
 
     for species, growing in enumerate(genotype_n_growing):
         genotype_freq = [i/sum(growing) for i in growing]  ## faster to use numpy or sth?
@@ -113,8 +113,6 @@ def generate_mutants(genotype_n_sep, nE, u, mutation_function, gen):
         mutant_n = sum(chance_tf)
         print(mutant_n, end=' ')  #
 
-        #if genx == 0:
-            #pdb.set_trace()
         if mutant_n != 0:
             mutants = random.choices(range(len(growing)), weights=genotype_freq, k=mutant_n)
             genotype_ct = len(flask[species].genotypes)
@@ -151,15 +149,18 @@ def run_one_simulation(flask, init_R, inher_R, Ta, rep, gen, mutation_function):
 
     # collect 1
     genotype_n_sep1 = list(sol1[-1, 3:])
+    #print('sep1', genotype_n_sep1)#
 
     # append 1
+    nE = len(lags1[0])#
     genotype_n_unsep1 = [genotype_n_sep1[i] + genotype_n_sep1[i + 1] for i in range(0, len(genotype_n_sep1), 2)]
-    for species in flask:
+    for s, species in enumerate(flask):
         for i, genotype in enumerate(species.genotypes):
-            final_sub.append((rep, gen, 1, species.name, genotype.name, genotype_n_sep1[2*i], genotype_n_sep1[2*i + 1], genotype_n_unsep1[i], genotype.lag, Ta))
+            final_sub.append((rep, gen, 1, species.name, genotype.name, genotype_n_sep1[2*i + (0, 2*nE)[s]], genotype_n_sep1[2*i + (1, 2*nE + 1)[s]], genotype_n_unsep1[i + (0, nE)[s]], genotype.lag, Ta)) ## attempt to fix
 
     # mutation
     genotype_n_sep_mut = generate_mutants(copy.deepcopy(genotype_n_sep1), len(flask[0].genotypes), (flask[0].u, flask[1].u), mutation_function, gen)
+    #print('mut', genotype_n_sep_mut)#
 
     # init_cond2
     init_cond2 = list(init_R)
@@ -188,9 +189,9 @@ def run_one_simulation(flask, init_R, inher_R, Ta, rep, gen, mutation_function):
         flask[1].genotypes[j].n = n / 2  # divide by 2
 
     # append 2
-    for species in flask:
+    for s, species in enumerate(flask):
         for i, genotype in enumerate(species.genotypes):
-            final_sub.append((rep, gen, 2, species.name, genotype.name, genotype_n_sep2[2*i]/2, genotype_n_sep2[2*i + 1]/2, genotype_n_unsep2[i]/2, genotype.lag, Ta)) # half the population pipetted into the next trial
+            final_sub.append((rep, gen, 2, species.name, genotype.name, genotype_n_sep2[2*i + (0, 2*nE)[s]]/2, genotype_n_sep2[2*i + (1, 2*nE + 1)[s]]/2, genotype_n_unsep2[i + (0, nE)[s]]/2, genotype.lag, Ta)) # half the population pipetted into the next trial
 
     inher_R = (sol2[-1][0]/2, sol2[-1][1]/2, sol2[-1][2]/2)
     return final_sub, inher_R
@@ -218,11 +219,11 @@ for rep in range(reps):
     # set up first species
     flask = Flask()
     flask.add_species(Species('Escherichia coli', u))
-    flask[0].add_genotype(Genotype('E0g0', init_n, init_lag, ancestors = '0')) ## lag cannot be 0 to avoid divide by zero
+    flask[0].add_genotype(Genotype('E0g0', copy.deepcopy(init_n), copy.deepcopy(init_lag), ancestors = '0')) ## lag cannot be 0 to avoid divide by zero
     final.append((rep, 0, 0, 'Escherichia coli', 'E0g0', init_n, 0, init_n, init_lag, Ta))
 
     flask.add_species(Species('Salmonella enterica', u))
-    flask[1].add_genotype(Genotype('S0g0', init_n, init_lag, ancestors='0'))
+    flask[1].add_genotype(Genotype('S0g0', copy.deepcopy(init_n), copy.deepcopy(init_lag), ancestors = '0'))
     final.append((rep, 0, 0, 'Salmonella enterica', 'S0g0', init_n, 0, init_n, init_lag, Ta))
 
     inher_R = (0, 0, 0)
