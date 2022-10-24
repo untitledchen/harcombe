@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import random
 import math
 
+
+##issue with odes
 ### define odes equation
 def odes(x, t, alpha, tau_lag, n, frid=False):
     '''
@@ -79,7 +81,7 @@ def odes(x, t, alpha, tau_lag, n, frid=False):
         locals()[f'Sl{j}'] = x[(2 + 2*nE) + 2*j]
 
         # differential equations
-        locals()[f'dSg{j}dt'] = (1 - alphaS)*locals()[f'rS{j}']*locals()[f'Sg{j}']*(M/(M+K_M))*(L/(L+K_L)) - locals()[f'kS{j}']*locals()[f'Sg{j}'] + locals()[f'Sl{j}']/locals()[f'tau_lagS{j}']
+        locals()[f'dSg{j}dt'] = (1 - alphaS)*locals()[f'rS{j}']*locals()[f'Sg{j}']*(A/(A+K_A)) - locals()[f'kS{j}']*locals()[f'Sg{j}'] + locals()[f'Sl{j}']/locals()[f'tau_lagS{j}']
         locals()[f'dSl{j}dt'] = -locals()[f'Sl{j}']/locals()[f'tau_lagS{j}']
 
     # M

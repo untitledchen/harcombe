@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from scipy.integrate import odeint
-from tolerance_odes import odes_mono
+from tolerance_odes import odes_co
 import seaborn as sns
 
 import random
@@ -12,12 +12,14 @@ import math
 import pdb#
 
 #question
+## should 105 mutants start lagging?
+# no 0.1 K_M
 # check mutation round_half_up
 # assuming genetic composition stays exactly the same during 500 mic transfer
 # more tuples
 
 globals()['seed'] = random.randrange(1000)
-random.seed(seed)
+random.seed(891) #891
 print('seed:', seed)
 
 plt.rcParams["axes.prop_cycle"] = plt.cycler("color", plt.cm.tab20.colors) #grabbed from stackoverflow
@@ -69,55 +71,63 @@ class Flask(list):
     def add_species(self, species):
         self.append(species)
 
-def run_phase(init_cond, lags, t_limit, phase, gens_info):
+def run_phase(init_cond, lags, t_limit, phase, names):
     alpha = [2,0][phase-1]
     t_interval = np.linspace(0, t_limit, 1000)
-    sol = odeint(odes_mono, init_cond, t_interval, args=(alpha, lags, False))
+    sol = odeint(odes_co, init_cond, t_interval, args=(alpha, lags, False))
 
-    '''
-    if globals()['genx'] == 49:
+    if globals()['genx'] == 19:
+        flatlags = [element for sub_list in lags for element in sub_list]
+        flatnames = [element for sub_list in names for element in sub_list]
+
         j = 0
-        for i in range(0, int(sol[:, 2:].shape[1]), 2):
-            plt.plot(t_interval, np.add(sol[:, i + 2], sol[:, i + 3]), label= f'{round_half_up(lags[j], 3)}, gen:{gens_info[j]}') # total pop
+        for i in range(0, int(sol[:, 3:].shape[1]), 2):
+            #pdb.set_trace()
+            plt.plot(t_interval, np.add(sol[:, i + 3], sol[:, i + 4]), label=f'{round_half_up(flatlags[j], 3)}, {flatnames[j]}')
             j += 1
+
         plt.plot(t_interval, sol[:, 0], label='met', color='r')
         plt.plot(t_interval, sol[:, 1], label='lac', color='b')
+        plt.plot(t_interval, sol[:, 2], label='ace', color='y')
         plt.legend(loc='center right')
         plt.title(f'seed {seed}')
         plt.show()
-    '''
 
     return sol
 
 # edited 10/17: returns genotype_n_sep edited
-def generate_mutants(genotype_n_sep, u, mutation_function, gen):
-    genotype_n_growing = genotype_n_sep[1::2] # makes a deep copy, apparently
-    genotype_freq = [i / sum(genotype_n_growing) for i in genotype_n_growing]  ## faster to use numpy or sth?
+def generate_mutants(genotype_n_sep, nE, u, mutation_function, gen):
+    genotype_n_growing = [genotype_n_sep[1:(nE + 1):2], genotype_n_sep[(nE + 1)::2]] # makes a deep copy, apparently    ##
 
-    if round_half_up(sum(genotype_freq)) != 1: #
-        print(genotype_freq)
-        print("stop freq")
-        return -1
+    for species, growing in enumerate(genotype_n_growing):
+        genotype_freq = [i/sum(growing) for i in growing]  ## faster to use numpy or sth?
 
-    # Adamowicz-based
-    chance = [random.uniform(0, 1) for i in range(round_half_up(sum(genotype_n_growing)))]
-    chance_tf = [i < u for i in chance]
-    mutant_n = sum(chance_tf)
-    print(mutant_n, end=' ')  #
+        # if round_half_up(sum(genotype_freq)) != 1: #
+        #     print(genotype_freq)
+        #     print("stop freq")
+        #     return -1
 
-    if mutant_n != 0:
-        mutants = random.choices(range(len(genotype_n_growing)), weights=genotype_freq, k=mutant_n)
+        # Adamowicz-based
+        chance = [random.uniform(0, 1) for i in range(round_half_up(sum(growing)))]
+        chance_tf = [i < u[species] for i in chance]
+        mutant_n = sum(chance_tf)
+        print(mutant_n, end=' ')  #
 
-        genotype_ct = len(flask[0].genotypes)
-        for i, anc_i in enumerate(mutants):
-            ancestor = flask[0].genotypes[anc_i]
+        #if genx == 0:
+            #pdb.set_trace()
+        if mutant_n != 0:
+            mutants = random.choices(range(len(growing)), weights=genotype_freq, k=mutant_n)
+            genotype_ct = len(flask[species].genotypes)
 
-            genotype_n_sep[2*anc_i + 1] -= 1
-            genotype_n_sep.append(1)
-            genotype_n_sep.append(0)
+            for j, anc_i in enumerate(mutants):
+                ancestor = flask[species].genotypes[anc_i]
 
-            flask[0].add_genotype(Genotype(f'E{genotype_ct + i}g{gen}', n=1, lag=max([0, ancestor.lag + mutation_function()]),
-                                           ancestors=ancestor.name + ' ' + ancestor.ancestors))
+                genotype_n_sep[2*anc_i + (1, 2*nE + 1)[species]] -= 1 # tuple is for correct indices in genotype_n_sep, which is not separated by species
+                genotype_n_sep.append(1) ##
+                genotype_n_sep.append(0)
+
+                flask[species].add_genotype(Genotype(f"{('E', 'S')[species]}{genotype_ct + j}g{gen}", n=1, lag=max([0, ancestor.lag + mutation_function()]),
+                                               ancestors=ancestor.name + ' ' + ancestor.ancestors))
 
     return genotype_n_sep
 
@@ -125,56 +135,64 @@ def run_one_simulation(flask, init_R, inher_R, Ta, rep, gen, mutation_function):
     final_sub = []
 
     # init_cond1
-    init_cond1 = [init_R[0] + inher_R[0], init_R[1] + inher_R[1]]
-    for genotype in flask[0].genotypes: # for each genotype, El = n and Eg = 0
-        init_cond1.append(genotype.n)
-        init_cond1.append(0)
-    lags1 = [i.lag for i in flask[0].genotypes]
-    gens_info1 = [i.name.split('g')[1] for i in flask[0].genotypes] #
-    print('init cond1', init_cond1[2:]) #
+    init_cond1 = [init_R[0] + inher_R[0], init_R[1] + inher_R[1], init_R[2] + inher_R[2]]
+    for species in flask:
+        for genotype in species.genotypes: # for each genotype, l = n and g = 0
+            init_cond1.append(genotype.n)
+            init_cond1.append(0)
+    lags1 = [[i.lag for i in j.genotypes] for j in flask]
+
+    names1 = [[i.name for i in j.genotypes] for j in flask] #
+    #gens_info1 = [[i.name.split('g')[1] for i in j.genotypes] for j in flask]
+    #print('init cond1', init_cond1[2:]) #
 
     # phase 1
-    sol1 = run_phase(init_cond1, lags1, Ta, 1, gens_info1)
+    sol1 = run_phase(init_cond1, lags1, Ta, 1, names1)
 
     # collect 1
-    genotype_n_sep1 = list(sol1[-1, 2:])
+    genotype_n_sep1 = list(sol1[-1, 3:])
 
     # append 1
     genotype_n_unsep1 = [genotype_n_sep1[i] + genotype_n_sep1[i + 1] for i in range(0, len(genotype_n_sep1), 2)]
-    for i, genotype in enumerate(flask[0].genotypes):
-        final_sub.append((rep, gen, 1, flask[0].name, genotype.name, genotype_n_sep1[2*i], genotype_n_sep1[2*i + 1], genotype_n_unsep1[i], genotype.lag, Ta))
+    for species in flask:
+        for i, genotype in enumerate(species.genotypes):
+            final_sub.append((rep, gen, 1, species.name, genotype.name, genotype_n_sep1[2*i], genotype_n_sep1[2*i + 1], genotype_n_unsep1[i], genotype.lag, Ta))
 
     # mutation
-    genotype_n_sep_mut = generate_mutants(copy.deepcopy(genotype_n_sep1), flask[0].u, mutation_function, gen)
+    genotype_n_sep_mut = generate_mutants(copy.deepcopy(genotype_n_sep1), len(flask[0].genotypes), (flask[0].u, flask[1].u), mutation_function, gen)
 
     # init_cond2
     init_cond2 = list(init_R)
     for i in range(0, len(genotype_n_sep_mut), 2):
         init_cond2.append(genotype_n_sep_mut[i])
         init_cond2.append(genotype_n_sep_mut[i + 1])
-    print('init cond2', init_cond2[2:]) #
-    lags2 = [i.lag for i in flask[0].genotypes]
-    gens_info2 = [i.name.split('g')[1] for i in flask[0].genotypes] #
+    #print('init cond2', init_cond2[2:]) #
+    lags2 = [[i.lag for i in j.genotypes] for j in flask]
+    names2 = [[i.name for i in j.genotypes] for j in flask]  #
+    #gens_info2 = [i.name.split('g')[1] for i in flask[0].genotypes] #
 
     # phase 2
-    sol2 = run_phase(init_cond2, lags2, 20, 2, gens_info2)
+    sol2 = run_phase(init_cond2, lags2, 20, 2, names2) # arbitrary 20 hr
 
     # collect 2
-    genotype_n_sep2 = list(sol2[-1, 2:])
+    genotype_n_sep2 = list(sol2[-1, 3:])
     #print('gen sep2', genotype_n_sep2)  #
     genotype_n_unsep2 = [genotype_n_sep2[i] + genotype_n_sep2[i+1] for i in range(0, len(genotype_n_sep2), 2)]
 
     # register final counts of genotypes in flask
-    for i in range(len(genotype_n_unsep2)):
-        flask[0].genotypes[i].n = genotype_n_unsep2[i]/2 # divide by 2
+    nE = len(flask[0].genotypes)
+    for i, n in enumerate(genotype_n_unsep2[:nE]):
+        flask[0].genotypes[i].n = n / 2  # divide by 2
 
-    #if genx == 10:
-    #    pdb.set_trace()
+    for j, n in enumerate(genotype_n_unsep2[nE:]):
+        flask[1].genotypes[j].n = n / 2  # divide by 2
+
     # append 2
-    for i, genotype in enumerate(flask[0].genotypes):
-        final_sub.append((rep, gen, 2, flask[0].name, genotype.name, genotype_n_sep2[2*i]/2, genotype_n_sep2[2*i + 1]/2, genotype_n_unsep2[i]/2, genotype.lag, Ta)) # half the population pipetted into the next trial
+    for species in flask:
+        for i, genotype in enumerate(species.genotypes):
+            final_sub.append((rep, gen, 2, species.name, genotype.name, genotype_n_sep2[2*i]/2, genotype_n_sep2[2*i + 1]/2, genotype_n_unsep2[i]/2, genotype.lag, Ta)) # half the population pipetted into the next trial
 
-    inher_R = (sol2[-1][0]/2, sol2[-1][1]/2)
+    inher_R = (sol2[-1][0]/2, sol2[-1][1]/2, sol2[-1][2]/2)
     return final_sub, inher_R
 
 ### simulation parameters
@@ -182,9 +200,9 @@ reps = 1
 u = 0.001 # mutation rate
 gens = 20
 
-init_R = (1000, 1000) # starting (M, L) of each new growth flask
-init_n = 10 # starting E. coli population
-init_lag = 1 # starting E. coli lag
+init_R = (1, 1000, 0) # starting (M, L, A) of each new growth flask
+init_n = 10 # starting population
+init_lag = 1 # starting lag
 Ta = 3 # length of antibiotic treatment
 max_lag_change = 1.1 # max mutation-induced lag change ## orig. antibiotic_change_per_well * 1.1
 
@@ -201,16 +219,20 @@ for rep in range(reps):
     flask = Flask()
     flask.add_species(Species('Escherichia coli', u))
     flask[0].add_genotype(Genotype('E0g0', init_n, init_lag, ancestors = '0')) ## lag cannot be 0 to avoid divide by zero
-
     final.append((rep, 0, 0, 'Escherichia coli', 'E0g0', init_n, 0, init_n, init_lag, Ta))
 
-    inher_R = (0, 0)
+    flask.add_species(Species('Salmonella enterica', u))
+    flask[1].add_genotype(Genotype('S0g0', init_n, init_lag, ancestors='0'))
+    final.append((rep, 0, 0, 'Salmonella enterica', 'S0g0', init_n, 0, init_n, init_lag, Ta))
+
+    inher_R = (0, 0, 0)
     # run simulation
     for gen in range(gens):
         globals()['genx'] = gen
+        print(genx, end=':')
         final_sub, inher_R = run_one_simulation(flask, init_R, inher_R, Ta, rep, gen, null_function)
         for row in final_sub:
             final.append(row)
 
 final_pd = pd.DataFrame(final[1:], columns = list(final[0]))
-final_pd.to_csv(f'final_mono_{seed}.csv', index=False)
+final_pd.to_csv(f'final_co_{seed}.csv', index=False)
