@@ -71,9 +71,8 @@ class Flask(list):
     def add_species(self, species):
         self.append(species)
 
-def run_phase(init_cond, lags, t_limit, phase, names):
+def run_phase(init_cond, lags, t_interval, phase, names):
     alpha = [2,0][phase-1]
-    t_interval = np.linspace(0, t_limit, 1000)
     sol = odeint(odes_co, init_cond, t_interval, args=(alpha, lags, False))
 
     if globals()['genx'] == 19:
@@ -139,13 +138,12 @@ def run_one_simulation(flask, init_R, inher_R, Ta, rep, gen, mutation_function):
             init_cond1.append(genotype.n)
             init_cond1.append(0)
     lags1 = [[i.lag for i in j.genotypes] for j in flask]
-
+    t_interval1 = np.linspace(0, Ta, 1000)
     names1 = [[i.name for i in j.genotypes] for j in flask] #
-    #gens_info1 = [[i.name.split('g')[1] for i in j.genotypes] for j in flask]
-    #print('init cond1', init_cond1[2:]) #
+
 
     # phase 1
-    sol1 = run_phase(init_cond1, lags1, Ta, 1, names1)
+    sol1 = run_phase(init_cond1, lags1, t_interval1, 1, names1)
 
     # collect 1
     genotype_n_sep1 = list(sol1[-1, 3:])
@@ -169,11 +167,11 @@ def run_one_simulation(flask, init_R, inher_R, Ta, rep, gen, mutation_function):
         init_cond2.append(genotype_n_sep_mut[i + 1])
     #print('init cond2', init_cond2[2:]) #
     lags2 = [[i.lag for i in j.genotypes] for j in flask]
+    t_interval2 = np.linspace(0, 20, 1000) # arbitrary
     names2 = [[i.name for i in j.genotypes] for j in flask]  #
-    #gens_info2 = [i.name.split('g')[1] for i in flask[0].genotypes] #
 
     # phase 2
-    sol2 = run_phase(init_cond2, lags2, 20, 2, names2) # arbitrary 20 hr
+    sol2 = run_phase(init_cond2, lags2, t_interval2, 2, names2)
 
     # collect 2
     genotype_n_sep2 = list(sol2[-1, 3:])

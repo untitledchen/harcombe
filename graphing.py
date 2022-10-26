@@ -10,7 +10,7 @@ def round_half_up(n, decimals=0):
         rounded = int(rounded)
     return rounded
 
-data = pd.read_csv('final_co_875.csv', na_filter=False)
+data = pd.read_csv('final_co_447.csv', na_filter=False)
 data = data.assign(name=data['genotype'] +  ", " +[str(round_half_up(i, 3)) for i in data['lag']])
 data = data.assign(tp= [f'{i}, {j}' for i, j in zip(data['gen'], data['phase_end'])])
 sns.relplot(data=data, kind='line', x='tp', y='ntot', hue='name')

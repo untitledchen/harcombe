@@ -120,7 +120,7 @@ def odes_co(x, t, alpha, lags, frid=False):
     dMdt = (-sigma_strainsE * cM * (M / (M + K_M)) * (L / (L + K_L)) + sigma_strainsS * pM * rS * (A/(A + K_A)) - kM * M) * (1, 0)[frid]
 
     # L
-    dLdt = (-sigma_strainsE * cL * (M / (M + K_M)) * (L / (L + K_L)) - kL * L) * ((1, 0)[frid])
+    dLdt = (-sigma_strainsE * cL * (M / (M + K_M)) * (L / (L + K_L)) - kL * L) * (1, 0)[frid]
 
     # A
     dAdt = (sigma_strainsE * pA * rE * (M / (M + K_M)) * (L / (L + K_L)) - sigma_strainsS * cA * (A/(A + K_A)) - kA * A) * (1, 0)[frid]
