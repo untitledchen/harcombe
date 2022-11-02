@@ -70,7 +70,7 @@ class Flask(list):
         self.append(species)
 
 def run_phase(init_cond, lags, t_limit, phase, gens_info):
-    alpha = [2,0][phase-1]
+    alpha = [3,0][phase-1]
     t_interval = np.linspace(0, t_limit, 1000)
     sol = odeint(odes_mono, init_cond, t_interval, args=(alpha, lags, False))
 
@@ -131,7 +131,7 @@ def run_one_simulation(flask, init_R, inher_R, Ta, rep, gen, mutation_function):
         init_cond1.append(0)
     lags1 = [i.lag for i in flask[0].genotypes]
     gens_info1 = [i.name.split('g')[1] for i in flask[0].genotypes] #
-    print('init cond1', init_cond1[2:]) #
+    #print('init cond1', init_cond1[2:]) #
 
     # phase 1
     sol1 = run_phase(init_cond1, lags1, Ta, 1, gens_info1)
@@ -152,7 +152,7 @@ def run_one_simulation(flask, init_R, inher_R, Ta, rep, gen, mutation_function):
     for i in range(0, len(genotype_n_sep_mut), 2):
         init_cond2.append(genotype_n_sep_mut[i])
         init_cond2.append(genotype_n_sep_mut[i + 1])
-    print('init cond2', init_cond2[2:]) #
+    #print('init cond2', init_cond2[2:]) #
     lags2 = [i.lag for i in flask[0].genotypes]
     gens_info2 = [i.name.split('g')[1] for i in flask[0].genotypes] #
 

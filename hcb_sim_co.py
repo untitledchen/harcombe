@@ -72,7 +72,7 @@ class Flask(list):
         self.append(species)
 
 def run_phase(init_cond, lags, t_interval, phase, names):
-    alpha = [2,0][phase-1]
+    alpha = [3,0][phase-1]
     sol = odeint(odes_co, init_cond, t_interval, args=(alpha, lags, False))
 
     if globals()['genx'] == 19:
