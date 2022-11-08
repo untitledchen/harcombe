@@ -75,6 +75,7 @@ def run_phase(init_cond, lags, t_interval, phase, names):
     alpha = [3,0][phase-1]
     sol = odeint(odes_co, init_cond, t_interval, args=(alpha, lags, False))
 
+    '''
     if globals()['genx'] == 19:
         flatlags = [element for sub_list in lags for element in sub_list]
         flatnames = [element for sub_list in names for element in sub_list]
@@ -91,6 +92,7 @@ def run_phase(init_cond, lags, t_interval, phase, names):
         plt.legend(loc='center right')
         plt.title(f'seed {seed}')
         plt.show()
+    '''
 
     return sol
 
@@ -195,12 +197,12 @@ def run_one_simulation(flask, init_R, inher_R, Ta, rep, gen, mutation_function):
     return final_sub, inher_R
 
 ### simulation parameters
-reps = 1
+reps = 10
 u = 0.001 # mutation rate
 gens = 20
 
 init_R = (1, 1000, 0) # starting (M, L, A) of each new growth flask
-init_n = 10 # starting population
+init_n = 5 # starting population, half of mono
 init_lag = 1 # starting lag
 Ta = 3 # length of antibiotic treatment
 max_lag_change = 1.1 # max mutation-induced lag change ## orig. antibiotic_change_per_well * 1.1

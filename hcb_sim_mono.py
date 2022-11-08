@@ -16,7 +16,7 @@ import pdb#
 # assuming genetic composition stays exactly the same during 500 mic transfer
 # more tuples
 
-globals()['seed'] = random.randrange(1000)
+globals()['seed'] = 77 #random.randrange(1000)
 random.seed(seed)
 print('seed:', seed)
 
@@ -178,7 +178,7 @@ def run_one_simulation(flask, init_R, inher_R, Ta, rep, gen, mutation_function):
     return final_sub, inher_R
 
 ### simulation parameters
-reps = 1
+reps = 10
 u = 0.001 # mutation rate
 gens = 20
 
