@@ -96,11 +96,10 @@ def run_phase(init_cond, lags, t_interval, phase, names):
 
     return sol
 
-# edited 10/17: returns genotype_n_sep edited
 def generate_mutants(genotype_n_sep, nE, u, mutation_function, gen):
     genotype_n_growing = [genotype_n_sep[1:(2*nE + 1):2], genotype_n_sep[(2*nE + 1)::2]] # makes a deep copy, apparently    ##
 
-    for species, growing in enumerate(genotype_n_growing):
+    for species, growing in enumerate(genotype_n_growing): # [genotype_n_growing[0]] to exclude S
         genotype_freq = [i/sum(growing) for i in growing]  ## faster to use numpy or sth?
 
         # if round_half_up(sum(genotype_freq)) != 1: #
@@ -112,7 +111,6 @@ def generate_mutants(genotype_n_sep, nE, u, mutation_function, gen):
         chance = [random.uniform(0, 1) for i in range(round_half_up(sum(growing)))]
         chance_tf = [i < u[species] for i in chance]
         mutant_n = sum(chance_tf)
-        print(mutant_n, end=' ')  #
 
         if mutant_n != 0:
             mutants = random.choices(range(len(growing)), weights=genotype_freq, k=mutant_n)
@@ -142,7 +140,6 @@ def run_one_simulation(flask, init_R, inher_R, Ta, rep, gen, mutation_function):
     lags1 = [[i.lag for i in j.genotypes] for j in flask]
     t_interval1 = np.linspace(0, Ta, 1000)
     names1 = [[i.name for i in j.genotypes] for j in flask] #
-
 
     # phase 1
     sol1 = run_phase(init_cond1, lags1, t_interval1, 1, names1)
@@ -229,11 +226,9 @@ for rep in range(reps):
     inher_R = (0, 0, 0)
     # run simulation
     for gen in range(gens):
-        globals()['genx'] = gen
-        print(genx, end=':')
         final_sub, inher_R = run_one_simulation(flask, init_R, inher_R, Ta, rep, gen, null_function)
         for row in final_sub:
             final.append(row)
 
 final_pd = pd.DataFrame(final[1:], columns = list(final[0]))
-final_pd.to_csv(f'final_co_{seed}.csv', index=False)
+final_pd.to_csv(f'final_co_{seed}Ta{Ta}.csv', index=False)

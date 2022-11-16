@@ -16,7 +16,7 @@ import pdb#
 # assuming genetic composition stays exactly the same during 500 mic transfer
 # more tuples
 
-globals()['seed'] = 77 #random.randrange(1000)
+globals()['seed'] = random.randrange(1000)
 random.seed(seed)
 print('seed:', seed)
 
@@ -103,7 +103,6 @@ def generate_mutants(genotype_n_sep, u, mutation_function, gen):
     chance = [random.uniform(0, 1) for i in range(round_half_up(sum(genotype_n_growing)))]
     chance_tf = [i < u for i in chance]
     mutant_n = sum(chance_tf)
-    print(mutant_n, end=' ')  #
 
     if mutant_n != 0:
         mutants = random.choices(range(len(genotype_n_growing)), weights=genotype_freq, k=mutant_n)
@@ -207,10 +206,9 @@ for rep in range(reps):
     inher_R = (0, 0)
     # run simulation
     for gen in range(gens):
-        globals()['genx'] = gen
         final_sub, inher_R = run_one_simulation(flask, init_R, inher_R, Ta, rep, gen, null_function)
         for row in final_sub:
             final.append(row)
 
 final_pd = pd.DataFrame(final[1:], columns = list(final[0]))
-final_pd.to_csv(f'final_mono_{seed}.csv', index=False)
+final_pd.to_csv(f'final_mono_{seed}Ta{Ta}.csv', index=False)
