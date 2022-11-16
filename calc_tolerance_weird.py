@@ -23,6 +23,8 @@ def odes_mono(init_cond, t_interval, a, lags):
     for i in range(nE):
         locals()[f'El{i}'] = init_cond[2*i]
         locals()[f'Eg{i}'] = init_cond[2*i + 1]
+        print(locals()[f'El{i}'])
+        print(locals()[f'Eg{i}'])
 
         locals()[f'dEl{i}dt'] = -locals()[f'El{i}']/lags[i]
         locals()[f'dEg{i}dt'] = a*locals()[f'Eg{i}'] + locals()[f'El{i}']/lags[i]
@@ -46,8 +48,8 @@ def odes_co(init_cond, t_interval, a, lags):
         locals()[f'dEg{i}dt'] = a*locals()[f'Eg{i}'] + locals()[f'El{i}']/lags[0][i]
 
     for j in range(nS):
-        locals()[f'Sl{j}'] = init_cond[2*j + nE]
-        locals()[f'Sg{j}'] = init_cond[2*j + 1 + nE]
+        locals()[f'Sl{j}'] = init_cond[2*j + 1 + nE]
+        locals()[f'Sg{j}'] = init_cond[2*j + 2 + nE]
 
         locals()[f'dSl{j}dt'] = -locals()[f'Sl{j}']/lags[1][j]
         locals()[f'dSg{j}dt'] = a*locals()[f'Sg{j}'] + locals()[f'Sl{j}']/lags[1][j]
@@ -62,15 +64,16 @@ def odes_co(init_cond, t_interval, a, lags):
 
     return to_return
 
-def calc_tolerance(culture, init_cond, lags, t_interval, stop):
+def calc_tolerance(culture, sol, lags, t_interval, stop):
     iter = 0
-    sol = init_cond
-    while iter < 100:
-        sol = odeint([odes_mono, odes_co][culture], sol, t_interval, args=(-1, lags))[-1]
+    while iter < 50:
+        sol = odeint([odes_mono, odes_co][culture], sol, t_interval, args=(-1, lags))
 
-        if iter == 0:
-            plt.plot(sol, t_interval)
-            plt.show()
+        # if iter == 0:#
+        # plt.plot(t_interval, sol)
+        # plt.show()
+
+        sol = sol[-1]#
 
         if np.sum(sol[-1]) <= stop:
             return iter
@@ -103,6 +106,7 @@ for rep in range(reps):
         n_set = (curr_gen['ntot'] / sum(curr_gen['ntot'])) * set_pop
 
         init_cond = list(chain.from_iterable(zip(n_set, repeat(0, len(curr_gen)))))
+        print(gen, init_cond)#
 
         if n_species == 0:
             lags = tuple(curr_gen.loc[curr_gen['species'] == 'Escherichia coli']['lag'])
