@@ -81,7 +81,7 @@ def calc_tolerance(culture, sol, lags, t_interval, stop):
     return -1
 
 ### start interface
-file_name = 'final_co_215Ta3.csv' #'ENTER FILENAME') + '.csv'
+file_name = 'final_co_215Ta3.csv'  #'ENTER FILENAME') + '.csv'
 culture_type = file_name.split('_')[1]
 seed = file_name.split('_')[2].split('.')[0]
 
