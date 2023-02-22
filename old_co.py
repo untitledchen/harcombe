@@ -196,7 +196,7 @@ def run_one_simulation(flask, init_R, inher_R, Ta, rep, gen, mutation_function):
 ### simulation parameters
 reps = 10
 u = 0.001 # mutation rate
-gens = 20
+gens = 10
 
 init_R = (1, 1000, 0) # starting (M, L, A) of each new growth flask
 init_n = 5 # starting population, half of mono
@@ -209,7 +209,7 @@ max_lag_change = 1.1 # max mutation-induced lag change ## orig. antibiotic_chang
 null_function = make_null_function(max_lag_change)
 
 ### run simulation
-final = [('rep', 'gen', 'phase_end', 'species', 'genotype', 'nlag', 'ngrow', 'ntot', 'lag', 'Ta')]
+final = [('rep', 'cycle', 'phase_end', 'species', 'genotype', 'nlag', 'ngrow', 'ntot', 'lag', 'Ta')]
 per_gen_data = []
 for rep in range(reps):
 

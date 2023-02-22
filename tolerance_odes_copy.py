@@ -1,58 +1,11 @@
-def odes_mono(x, t, alpha, lags, frid=False):
-    nE = len(lags)
-
-    # M = methionine, L = lactose
-    M = x[0]
-    L = x[1]
-
-    # half-saturation constants
-    K_M = 1
-    K_L = 1
-
-    # resource decay constants
-    kM = 5e-9
-    kL = 5e-9
-
-    # resource consumption (c) / production (p) constants
-    cM = 0.1
-    cL = 1.0
-
-    # E growth / decay constants
-    alphaE = alpha[0]
-    rE = 1
-    kE = 5e-9
-
-    # E
-    for i in range(nE):
-        locals()[f'tau_lagE{i}'] = lags[i]
-
-        locals()[f'El{i}'] = x[2 * i + 2]
-        locals()[f'Eg{i}'] = x[2 * i + 3]
-
-        # differential equations
-        locals()[f'dEl{i}dt'] = -locals()[f'El{i}'] / locals()[f'tau_lagE{i}']
-        locals()[f'dEg{i}dt'] = (1 - alphaE) * rE * locals()[f'Eg{i}'] * (M / (M + K_M)) * (L / (L + K_L)) - kE * locals()[f'Eg{i}'] + locals()[f'El{i}'] / locals()[f'tau_lagE{i}']
-
-    # M
-    sigma_strains = 0
-    for i in range(nE):
-        sigma_strains += locals()[f'Eg{i}']
-
-    dMdt = (-sigma_strains * cM * (M / (M + K_M)) * (L / (L + K_L)) - kM * M) * ((1, 0)[frid])
-
-    # L
-    dLdt = (-sigma_strains * cL * (M / (M + K_M)) * (L / (L + K_L)) - kL * L) * ((1, 0)[frid])
-
-    to_return = [dMdt, dLdt]
-    for i in range(nE):
-        to_return.append(locals()[f'dEl{i}dt'])
-        to_return.append(locals()[f'dEg{i}dt'])
-
-    return to_return
-
-def odes_co(x, t, alpha, lags, frid=False):
+def odes(x, t, alpha, lags, frid=False):
+    n_species = len(lags)
     nE = len(lags[0])
-    nS = len(lags[1])
+
+    if n_species == 2:
+        nS = len(lags[1])
+    else:
+        nS = 0
 
     #  M = methionine, L = lactose, A = acetate
     M = x[0]
@@ -69,16 +22,23 @@ def odes_co(x, t, alpha, lags, frid=False):
     kL = 5e-9
     kA = 5e-9
 
-    # E. coli
     # growth / decay constants
+    # E
     alphaE = alpha[0]
     rE = 1
     kE = 5e-9
+    # S
+    rS = 0.5
+    kS = 5e-9
 
     # resource consumption (c) / production (p) constants
+    # E
     cM = 0.1
     cL = 1.0
     pA = 1.01
+    # S
+    cA = 1.0
+    pM = 1.56
 
     for i in range(nE):
         locals()[f'tau_lagE{i}'] = lags[0][i]
@@ -91,14 +51,8 @@ def odes_co(x, t, alpha, lags, frid=False):
         locals()[f'dEg{i}dt'] = (1 - alphaE) * rE * locals()[f'Eg{i}'] * (M/(M + K_M)) * (L/(L + K_L)) - kE * locals()[f'Eg{i}'] + locals()[f'El{i}'] / locals()[f'tau_lagE{i}']
 
     # S. enterica
-    # growth / decay constants
-    alphaS = alpha[1]
-    rS = 0.5
-    kS = 5e-9
-
-    # resource consumption (c) / production (p) constants
-    cA = 1.0
-    pM = 1.56
+    if n_species == 2:
+        alphaS = alpha[1]
 
     for j in range(nS):
         locals()[f'tau_lagS{j}'] = lags[1][j]

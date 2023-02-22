@@ -17,9 +17,9 @@ data = pd.concat([data_mono, data_co], axis=0, ignore_index=True)
 #
 # data_co_sstag = pd.read_csv('times_co_971Ta3sstag.csv', na_filter=False)
 # data_co_sstag = data_co_sstag.assign(culture='cosstag')
-#
 # data = pd.concat([data_mono, data_co, data_co_init1010, data_co_sstag], axis=0, ignore_index=True)
-# sns.relplot(data=data, kind='line', x='gen', y='tol_time', hue='culture', style='culture', dashes=False, markers=True)
+data = pd.concat([data_mono, data_co], axis=0, ignore_index=True)
+sns.relplot(data=data, kind='line', x='gen', y='tol_time', hue='culture', style='culture', dashes=False, markers=True)
 
 slopemono, intercept, r_value, p_value, std_err = stats.linregress(data.loc[data['culture'] == 'mono']['gen'], data.loc[data['culture'] == 'mono']['tol_time'])
 slopeco, intercept, r_value, p_value, std_err = stats.linregress(data.loc[data['culture'] == 'co']['gen'], data.loc[data['culture'] == 'co']['tol_time'])

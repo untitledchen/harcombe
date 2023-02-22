@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from scipy.integrate import odeint
-from tolerance_odes_copy import odes_mono
+from tolerance_odes import odes_mono
 import seaborn as sns
 
 import random
@@ -179,12 +179,12 @@ def run_one_simulation(flask, init_R, inher_R, Ta, rep, gen, mutation_function):
 ### simulation parameters
 reps = 10
 u = 0.001 # mutation rate
-gens = 20
+gens = 10
 
 init_R = (1000, 1000) # starting (M, L) of each new growth flask
 init_n = 10 # starting E. coli population
 init_lag = 1 # starting E. coli lag
-Ta = 3 # length of antibiotic treatment
+Ta = 5 # length of antibiotic treatment
 max_lag_change = 1.1 # max mutation-induced lag change ## orig. antibiotic_change_per_well * 1.1
 
 ### make mutation function
@@ -192,7 +192,7 @@ max_lag_change = 1.1 # max mutation-induced lag change ## orig. antibiotic_chang
 null_function = make_null_function(max_lag_change)
 
 ### run simulation
-final = [('rep', 'gen', 'phase_end', 'species', 'genotype', 'nlag', 'ngrow', 'ntot', 'lag', 'Ta')]
+final = [('rep', 'cycle', 'phase_end', 'species', 'genotype', 'nlag', 'ngrow', 'ntot', 'lag', 'Ta')]
 per_gen_data = []
 for rep in range(reps):
 
