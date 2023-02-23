@@ -68,7 +68,7 @@ class Flask(list):
 def generate_mutants(flask, genotype_n_sep, nE, mu, mutation_function, cycle):
     genotype_n_growing = [genotype_n_sep[1:(2*nE + 1):2], genotype_n_sep[(2*nE + 1)::2]]
 
-    for species, growing in enumerate(genotype_n_growing): # [genotype_n_growing[0]] to exclude S
+    for species, growing in enumerate([genotype_n_growing[0]]): # [genotype_n_growing[0]] to exclude S
         genotype_freq = [i/sum(growing) for i in growing]
 
         # Adamowicz-based
@@ -182,10 +182,10 @@ def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_
                 final.append(row)
 
     final_pd = pd.DataFrame(final[1:], columns=list(final[0]))
-    final_pd.to_csv(f'final_{culture}_seed{seed}_rep{reps}_mu{mu}_cycles{cycles}_init_R{init_R}_init_n{init_n}_init_lag{init_lag}_Ta{Ta}_alpha{alpha}_{mutation_func_type}{max_lag_change}.csv', index=False)
+    final_pd.to_csv(f'costag_{culture}_seed{seed}_rep{reps}_mu{mu}_cycles{cycles}_init_R{init_R}_init_n{init_n}_init_lag{init_lag}_Ta{Ta}_alpha{alpha}_{mutation_func_type}{max_lag_change}.csv', index=False)
 
     print("Finished")#
     return
 
-#run(seed, "co", 20, (0.01, 0.01), 10, (1, 2780, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
-run(seed, "mono", 20, (0.01, 0.01), 10, (1000, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
+run(seed, "co", 20, (0.01, 0.01), 10, (1, 2780, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
+#run(seed, "mono", 10, (0.01, 0.01), 10, (80, 2780, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))

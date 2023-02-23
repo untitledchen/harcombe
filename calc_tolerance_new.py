@@ -19,10 +19,10 @@ def calc_tolerance(init_cond, interval, lags, cutoff):
 def run(filename, init_pop, perc_cutoff, interval):
     data = pd.read_csv(filename, na_filter=False)
 
-    #seed = data['seed'][0]
-    seed = filename.split('_')[2][:3]
-    #culture = data['culture'][0]
-    culture = filename.split('_')[1]
+    seed = data['seed'][0]
+    #seed = filename.split('_')[2][:3]
+    culture = data['culture'][0]
+    #culture = filename.split('_')[1]
 
     reps = max(data['rep']) + 1
     cycles = max(data['cycle']) + 1
@@ -52,6 +52,5 @@ def run(filename, init_pop, perc_cutoff, interval):
     times_pd = pd.DataFrame(times[1:], columns=list(times[0]))
     times_pd.to_csv(f'times_init_pop{init_pop}_perc_cutoff{perc_cutoff}_interval{interval}_{filename}', index=False)
 
-run("final_co_319Ta5.csv", 1000, 0.01, 0.25)
-run("final_mono_558Ta5.csv", 1000, 0.01, 0.25)
+run("costag_co_seed134_rep20_mu(0.01, 0.01)_cycles10_init_R(1, 2780, 0)_init_n(5, 5)_init_lag(1, 1)_Ta5_alpha(3, 3)_null(1.1, 1.1).csv", 1000, 0.01, 0.25)
 #run("final_mono_seed384_rep20_mu(0.01, 0.01)_cycles10_init_R(80, 2780, 0)_init_n(5, 5)_init_lag(1, 1)_Ta5_alpha(3, 3)_null(1.1, 1.1).csv", 1000, 0.01, 0.25)

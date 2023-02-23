@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 from scipy import stats
 import pdb
 
-fileco = "times_init_pop1000_perc_cutoff0.01_interval0.25_final_co_319Ta5.csv"
-filemono = "times_init_pop1000_perc_cutoff0.01_interval0.25_final_mono_558Ta5.csv"
+fileco = "times_init_pop1000_perc_cutoff0.01_interval0.25_costag_co_seed134_rep20_mu(0.01, 0.01)_cycles10_init_R(1, 2780, 0)_init_n(5, 5)_init_lag(1, 1)_Ta5_alpha(3, 3)_null(1.1, 1.1).csv"
+filemono = "times_init_pop1000_perc_cutoff0.01_interval0.25_final_mono_seed384_rep20_mu(0.01, 0.01)_cycles10_init_R(80, 2780, 0)_init_n(5, 5)_init_lag(1, 1)_Ta5_alpha(3, 3)_null(1.1, 1.1).csv"
 
 data_mono = pd.read_csv(filemono, na_filter=False)
 data_co = pd.read_csv(fileco, na_filter=False)
