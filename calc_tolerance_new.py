@@ -33,10 +33,10 @@ def calc_tolerance(init_cond, interval, lags, cutoff):
 def run(filename, init_pop, perc_cutoff, interval):
     data = pd.read_csv(filename, na_filter=False)
 
-    #seed = data['seed'][0]
-    seed = filename.split('_')[2][:3]
-    #culture = data['culture'][0]
-    culture = filename.split('_')[1]
+    seed = data['seed'][0]
+    #seed = filename.split('_')[2][:3]
+    culture = data['culture'][0]
+    #culture = filename.split('_')[1]
 
     reps = max(data['rep']) + 1
     cycles = max(data['cycle']) + 1
