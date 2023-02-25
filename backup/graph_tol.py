@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 from scipy import stats
 import pdb
 
-data_mono = pd.read_csv('times_mono_450Ta3.csv', na_filter=False)
-data_co = pd.read_csv('times_co_215Ta3.csv', na_filter=False)
+data_mono = pd.read_csv('times_mono_525Ta501u.csv', na_filter=False)
+data_co = pd.read_csv('times_co_520Ta501u.csv', na_filter=False)
 #input('ENTER CO file_name') + '.csv'
 
 data = pd.concat([data_mono, data_co], axis=0, ignore_index=True)

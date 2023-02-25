@@ -178,7 +178,7 @@ def run_one_simulation(flask, init_R, inher_R, Ta, rep, gen, mutation_function):
 
 ### simulation parameters
 reps = 10
-u = 0.001 # mutation rate
+u = 0.01 # mutation rate
 gens = 20
 
 init_R = (1000, 1000) # starting (M, L) of each new growth flask
@@ -211,4 +211,4 @@ for rep in range(reps):
             final.append(row)
 
 final_pd = pd.DataFrame(final[1:], columns = list(final[0]))
-final_pd.to_csv(f'final_mono_{seed}Ta{Ta}.csv', index=False)
+final_pd.to_csv(f'final_mono_{seed}Ta{Ta}01u.csv', index=False)

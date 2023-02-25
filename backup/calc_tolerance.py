@@ -70,7 +70,7 @@ def calc_tolerance_co(init_cond, lags, t_interval, names):
     nS = len(lags[1])
     alpha = 2
 
-    sol = odeint(odes_co, init_cond, t_interval, args=(2, lags, False))
+    sol = odeint(odes_co, init_cond, t_interval, args=(2, lags, True))
 
     # half-saturation constants
     K_M = 1
@@ -113,6 +113,9 @@ def calc_tolerance_co(init_cond, lags, t_interval, names):
     min_ind = derivs.index(min_slope)
     min_t = t_interval[min_ind]
     y = sum(sol[min_ind, 3:])
+
+    # plt.plot(t_interval, derivs)
+    # plt.show()
 
     b = y - min_slope * min_t
 
