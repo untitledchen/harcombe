@@ -101,31 +101,29 @@ def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow,
         for genotype in species.genotypes:
             init_cond.append(genotype.n)
             init_cond.append(0)
+    lags1 = [[i.lag for i in j.genotypes] for j in flask]
 
-    if cycle > 0:
-        lags1 = [[i.lag for i in j.genotypes] for j in flask]
+    # phase 1
+    sol1 = run_phase(alpha, init_cond, lags1, Ta, 1)
 
-        # phase 1
-        sol1 = run_phase(alpha, init_cond, lags1, Ta, 1)
+    # collect 1
+    genotype_n_sep1 = list(sol1[-1, 3:])
 
-        # collect 1
-        genotype_n_sep1 = list(sol1[-1, 3:])
+    # append 1
+    nE = len(lags1[0])
+    genotype_n_unsep1 = [genotype_n_sep1[i] + genotype_n_sep1[i + 1] for i in range(0, len(genotype_n_sep1), 2)]
+    for s, species in enumerate(flask):
+        for i, genotype in enumerate(species.genotypes):
+            final_sub.append((seed, culture, rep, cycle, 1, species.name, genotype.name, genotype_n_sep1[2*i + (0, 2*nE)[s]], genotype_n_sep1[2*i + (1, 2*nE + 1)[s]], genotype_n_unsep1[i + (0, nE)[s]], genotype.lag, Ta))
 
-        # append 1
-        nE = len(lags1[0])
-        genotype_n_unsep1 = [genotype_n_sep1[i] + genotype_n_sep1[i + 1] for i in range(0, len(genotype_n_sep1), 2)]
-        for s, species in enumerate(flask):
-            for i, genotype in enumerate(species.genotypes):
-                final_sub.append((seed, culture, rep, cycle, 1, species.name, genotype.name, genotype_n_sep1[2*i + (0, 2*nE)[s]], genotype_n_sep1[2*i + (1, 2*nE + 1)[s]], genotype_n_unsep1[i + (0, nE)[s]], genotype.lag, Ta))
+    # mutation
+    genotype_n_sep_mut = generate_mutants(flask, copy.deepcopy(genotype_n_sep1), len(flask[0].genotypes), tuple([flask[s].mu for s, spec in enumerate(flask)]), mutation_function, cycle) #
 
-        # mutation
-        genotype_n_sep_mut = generate_mutants(flask, copy.deepcopy(genotype_n_sep1), len(flask[0].genotypes), tuple([flask[s].mu for s, spec in enumerate(flask)]), mutation_function, cycle) #
-
-        # init_cond2
-        init_cond = list(init_R)
-        for i in range(0, len(genotype_n_sep_mut), 2):
-            init_cond.append(genotype_n_sep_mut[i])
-            init_cond.append(genotype_n_sep_mut[i + 1])
+    # init_cond2
+    init_cond = list(init_R)
+    for i in range(0, len(genotype_n_sep_mut), 2):
+        init_cond.append(genotype_n_sep_mut[i])
+        init_cond.append(genotype_n_sep_mut[i + 1])
     lags2 = [[i.lag for i in j.genotypes] for j in flask]
 
     # phase 2
