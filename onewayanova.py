@@ -26,6 +26,11 @@ for rep in range(reps2):
     slope, intercept, r_value, p_value, std_err = linregress(data2.loc[data1['rep'] == rep]['cycle'], data2.loc[data1['rep'] == rep]['log10_tol_time'])
     best_fit_by_rep2.append(slope)
 
+slopemono, intercept, r_value, p_value, std_err = linregress(data1['cycle'], data1['log10_tol_time'])
+slopeco, intercept, r_value, p_value, std_err = linregress(data2['cycle'], data2['log10_tol_time'])
+print("slope mono: ", slopemono)
+print("slope co: ", slopeco)
+
 print(f_oneway(best_fit_by_rep1, best_fit_by_rep2))
 
 # avg_tol_times_by_cycle1 = []
