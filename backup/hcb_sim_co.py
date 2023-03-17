@@ -195,7 +195,7 @@ def run_one_simulation(flask, init_R, inher_R, Ta, rep, gen, mutation_function):
 
 ### simulation parameters
 reps = 10
-u = 0.01 # mutation rate
+u = 0.001 # mutation rate
 gens = 20
 
 init_R = (1, 1000, 0) # starting (M, L, A) of each new growth flask
