@@ -7,8 +7,10 @@ C:\Users\untit\harcombe\hcb_sim.py:73: RuntimeWarning: invalid value encountered
 
 the pool from which to mutate is small post-phase 1. What if we mutated at the end?
 
-find ideal mutation rate (or not, excess work?)
+find ideal mutation rate (postmutate, 0.0002, rep5)
 mdk99 (onewayanova)
 5frac
-vary met 1 to 2000; lac 1000
-vary growth 0.1 to 2; e 1
+vary met 1 to 2000; lac 1000?
+vary growth 0.1 to 2; e 1?
+
+1 rep for each parameter

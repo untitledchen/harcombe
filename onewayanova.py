@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 from scipy.stats import f_oneway, linregress
 
-data1 = pd.read_csv(input("INPUT FILENAME 1 "), na_filter=False)
-data2 = pd.read_csv(input("INPUT FILENAME 2 "), na_filter=False)
+data1 = pd.read_csv(input("INPUT MONO "), na_filter=False)
+data2 = pd.read_csv(input("INPUT CO "), na_filter=False)
 
 # tol_times1 = list(data1['tol_time'])
 # tol_times2 = list(data2['tol_time'])

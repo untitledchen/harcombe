@@ -105,7 +105,7 @@ def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow,
     lags1 = [[i.lag for i in j.genotypes] for j in flask]
 
     # phase 1
-    sol1 = run_phase(alpha, init_cond, lags1, Ta, 1, inc=100)
+    sol1 = run_phase(alpha, init_cond, lags1, Ta, 1)
 
     # collect 1
     genotype_n_sep1 = list(sol1[-1, 3:])
@@ -128,7 +128,7 @@ def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow,
     lags2 = [[i.lag for i in j.genotypes] for j in flask]
 
     # phase 2
-    sol2 = run_phase(alpha, init_cond, lags2, t_grow, 2, inc=100)
+    sol2 = run_phase(alpha, init_cond, lags2, t_grow, 2)
 
     # collect 2
     genotype_n_sep2 = list(sol2[-1, 3:])
@@ -191,10 +191,9 @@ def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_
     final_pd = pd.DataFrame(final[1:], columns=list(final[0]))
     final_pd.to_csv(f'{culture}_seed{seed}_rep{reps}_mu{mu}_cycles{cycles}_init_R{init_R}_init_n{init_n}_init_lag{init_lag}_Ta{Ta}_alpha{alpha}_{mutation_func_type}{max_lag_change}-post.csv', index=False)
 
-    print("Finished")#
-    return
+    print("Finished")   # return
 
-#run(seed, "co", 5, (0.0001, 0.0001), 10, (1, 2780, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
-run(seed, "mono", 5, (0.0001, 0.0001), 10, (80, 2780, 0), (10, 10), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
+run(seed, "co", 5, (0.0002, 0.0002), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
+run(seed, "mono", 5, (0.0002, 0.0002), 10, (1000, 1000, 0), (10, 10), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
 
 # resource, cycles, t_grow, first cycle
