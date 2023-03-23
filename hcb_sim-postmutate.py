@@ -118,13 +118,13 @@ def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow,
             final_sub.append((seed, culture, rep, cycle, 1, species.name, genotype.name, genotype_n_sep1[2*i + (0, 2*nE)[s]], genotype_n_sep1[2*i + (1, 2*nE + 1)[s]], genotype_n_unsep1[i + (0, nE)[s]], genotype.lag, Ta, sol1[-1][0], sol1[-1][1], sol1[-1][2]))
 
     # mutation
-    genotype_n_sep_mut = generate_mutants(flask, copy.deepcopy(genotype_n_sep1), len(flask[0].genotypes), tuple([flask[s].mu for s, spec in enumerate(flask)]), mutation_function, cycle) #
+    #genotype_n_sep_mut = generate_mutants(flask, copy.deepcopy(genotype_n_sep1), len(flask[0].genotypes), tuple([flask[s].mu for s, spec in enumerate(flask)]), mutation_function, cycle) #
 
     # init_cond2
     init_cond = list(init_R)
-    for i in range(0, len(genotype_n_sep_mut), 2):
-        init_cond.append(genotype_n_sep_mut[i])
-        init_cond.append(genotype_n_sep_mut[i + 1])
+    for i in range(0, len(genotype_n_sep1), 2): ##
+        init_cond.append(genotype_n_sep1[i])
+        init_cond.append(genotype_n_sep1[i + 1])
     lags2 = [[i.lag for i in j.genotypes] for j in flask]
 
     # phase 2
@@ -132,15 +132,22 @@ def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow,
 
     # collect 2
     genotype_n_sep2 = list(sol2[-1, 3:])
-    genotype_n_unsep2 = [genotype_n_sep2[i] + genotype_n_sep2[i+1] for i in range(0, len(genotype_n_sep2), 2)]
+    #genotype_n_unsep2 = [genotype_n_sep2[i] + genotype_n_sep2[i+1] for i in range(0, len(genotype_n_sep2), 2)]
+
+    # mutate post
+    genotype_n_sep_mut = generate_mutants(flask, copy.deepcopy(genotype_n_sep2), len(flask[0].genotypes),
+                                          tuple([flask[s].mu for s, spec in enumerate(flask)]), mutation_function,
+                                          cycle)
+
+    genotype_n_unsep_mut = [genotype_n_sep_mut[i] + genotype_n_sep_mut[i+1] for i in range(0, len(genotype_n_sep_mut), 2)]
 
     # register final counts of genotypes in flask
     nE = len(flask[0].genotypes)
     # E
-    for i, n in enumerate(genotype_n_unsep2[:nE]):
+    for i, n in enumerate(genotype_n_unsep_mut[:nE]):   ##
         flask[0].genotypes[i].n = n / 2  # divide by 2 for transfer
     # S
-    for j, n in enumerate(genotype_n_unsep2[nE:]): ## should not run on mono
+    for j, n in enumerate(genotype_n_unsep_mut[nE:]): ## should not run on mono
         flask[1].genotypes[j].n = n / 2  # divide by 2 for transfer
 
     inher_R = (sol2[-1][0] / 2, sol2[-1][1] / 2, sol2[-1][2] / 2)
@@ -148,7 +155,7 @@ def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow,
     # append 2
     for s, species in enumerate(flask):
         for i, genotype in enumerate(species.genotypes):
-            final_sub.append((seed, culture, rep, cycle, 2, species.name, genotype.name, genotype_n_sep2[2*i + (0, 2*nE)[s]], genotype_n_sep2[2*i + (1, 2*nE + 1)[s]], genotype_n_unsep2[i + (0, nE)[s]], genotype.lag, Ta, inher_R[0], inher_R[1], inher_R[2]))
+            final_sub.append((seed, culture, rep, cycle, 2, species.name, genotype.name, genotype_n_sep_mut[2*i + (0, 2*nE)[s]], genotype_n_sep_mut[2*i + (1, 2*nE + 1)[s]], genotype_n_unsep_mut[i + (0, nE)[s]], genotype.lag, Ta, inher_R[0], inher_R[1], inher_R[2])) ##
 
     return final_sub, inher_R
 
@@ -182,12 +189,12 @@ def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_
                 final.append(row)
 
     final_pd = pd.DataFrame(final[1:], columns=list(final[0]))
-    final_pd.to_csv(f'{culture}_seed{seed}_rep{reps}_mu{mu}_cycles{cycles}_init_R{init_R}_init_n{init_n}_init_lag{init_lag}_Ta{Ta}_alpha{alpha}_{mutation_func_type}{max_lag_change}.csv', index=False)
+    final_pd.to_csv(f'{culture}_seed{seed}_rep{reps}_mu{mu}_cycles{cycles}_init_R{init_R}_init_n{init_n}_init_lag{init_lag}_Ta{Ta}_alpha{alpha}_{mutation_func_type}{max_lag_change}-post.csv', index=False)
 
     print("Finished")#
     return
 
-#run(seed, "co", 5, (0.04, 0.04), 10, (1, 2780, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
-#run(seed, "mono", 5, (0.04, 0.04), 10, (80, 2780, 0), (10, 10), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
+#run(seed, "co", 5, (0.0001, 0.0001), 10, (1, 2780, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
+run(seed, "mono", 5, (0.0001, 0.0001), 10, (80, 2780, 0), (10, 10), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
 
 # resource, cycles, t_grow, first cycle

@@ -1,0 +1,14 @@
+Cycle 7
+C:\Users\untit\AppData\Local\Programs\Python\Python310\lib\site-packages\scipy\integrate\_odepack_py.py:247: ODEintWarning: Excess work done on this call (perhaps wrong Dfun type). Run with full_output = 1 to get quantitative information.
+  warnings.warn(warning_msg, ODEintWarning)
+Cycle 8
+C:\Users\untit\harcombe\hcb_sim.py:73: RuntimeWarning: invalid value encountered in double_scalars
+  genotype_freq = [i/sum(growing) for i in growing]
+
+the pool from which to mutate is small post-phase 1. What if we mutated at the end?
+
+find ideal mutation rate (or not, excess work?)
+mdk99 (onewayanova)
+5frac
+vary met 1 to 2000; lac 1000
+vary growth 0.1 to 2; e 1
