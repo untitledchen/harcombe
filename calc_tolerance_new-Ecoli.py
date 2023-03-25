@@ -4,10 +4,11 @@ from itertools import chain, repeat
 
 
 def calc_tolerance(init_cond, interval, lags, cutoff):
+    nE = len(lags[0])  #
     alpha = tuple([3 for i in range(len(lags))])
 
     iter = 0
-    while sum(init_cond[3:]) > cutoff and iter < 100:
+    while sum(init_cond[3:(nE*2 + 3)]) > cutoff and iter < 100: #
         init_cond = run_phase(alpha, init_cond, lags, interval, 1, frid=False, inc=100) #
         iter += 1
 
@@ -24,6 +25,7 @@ def calc_tolerance(init_cond, interval, lags, cutoff):
         #     plt.show()
         #     return
         init_cond = init_cond[-1, :]
+        #print(sum(init_cond[3:(nE * 2 + 3)]))
     return iter * interval
 
 def run(filename, init_pop, perc_cutoff, interval):
@@ -60,6 +62,6 @@ def run(filename, init_pop, perc_cutoff, interval):
             times.append((seed, culture, rep, cycle, time))
 
     times_pd = pd.DataFrame(times[1:], columns=list(times[0]))
-    times_pd.to_csv(f'times_init_pop{init_pop}_perc_cutoff{perc_cutoff}_interval{interval}_{filename}', index=False)
+    times_pd.to_csv(f'times-Ecoli_init_pop{init_pop}_perc_cutoff{perc_cutoff}_interval{interval}_{filename}', index=False)
 
 run(input('INPUT FILENAME '), 1000, 0.01, .1)

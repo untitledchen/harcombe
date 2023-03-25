@@ -1,16 +1,15 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
-from run_phase import run_phase
+from scipy.integrate import odeint
+from tolerance_odes_copy import odes
 
 import random
 import copy
 import math
-import pdb#
 
 # make seed visible for re-generating purposes
-globals()['seed'] = random.randrange(1000)
+globals()['seed'] = 733#random.randrange(1000)
 random.seed(seed)
 print('seed:', seed)
 
@@ -64,6 +63,20 @@ class Flask(list):
 
     def add_species(self, species):
         self.append(species)
+
+def run_phase(alpha, init_cond, lags, t, phase, inc=1000, frid=False): #
+    alpha_this = tuple([[a,0][phase-1] for a in alpha])
+    t_interval = np.linspace(0, t, inc)
+    sol = odeint(odes, init_cond, t_interval, args=(alpha_this, lags, frid))
+
+    # plt.plot(t_interval, sol[:, 0], label='met', color='r')
+    # plt.plot(t_interval, sol[:, 1], label='lac', color='b')
+    # plt.plot(t_interval, sol[:, 2], label='ace', color='y')
+    # plt.legend(loc='center right')
+    # plt.title(phase)
+    # plt.show()
+
+    return sol
 
 def generate_mutants(flask, genotype_n_sep, nE, mu, mutation_function, cycle):
     genotype_n_growing = [genotype_n_sep[1:(2*nE + 1):2], genotype_n_sep[(2*nE + 1)::2]]
