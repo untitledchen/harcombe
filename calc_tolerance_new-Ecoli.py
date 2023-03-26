@@ -8,7 +8,7 @@ def calc_tolerance(init_cond, interval, lags, cutoff):
     alpha = tuple([3 for i in range(len(lags))])
 
     iter = 0
-    while sum(init_cond[3:(nE*2 + 3)]) > cutoff and iter < 100: #
+    while sum(init_cond[3:(nE*2 + 3)]) > cutoff: #and iter < 100:
         init_cond = run_phase(alpha, init_cond, lags, interval, 1, frid=False, inc=100) #
         iter += 1
 
@@ -25,7 +25,7 @@ def calc_tolerance(init_cond, interval, lags, cutoff):
         #     plt.show()
         #     return
         init_cond = init_cond[-1, :]
-        #print(sum(init_cond[3:(nE * 2 + 3)]))
+
     return iter * interval
 
 def run(filename, init_pop, perc_cutoff, interval):
@@ -48,6 +48,7 @@ def run(filename, init_pop, perc_cutoff, interval):
             curr_cycle = curr_rep.loc[curr_rep['cycle'] == cycle]
 
             n_set = (curr_cycle['ntot'] / sum(curr_cycle['ntot'])) * init_pop # for each genotype
+            init_pop_E = sum(curr_cycle.loc[curr_cycle['species'] == 'Escherichia coli']['ntot'])  #
 
             init_cond = [2780, 2780, 2780]
             init_cond += list(chain.from_iterable(zip(n_set, repeat(0, len(curr_cycle))))) # alternate n(lag) and 0 for init_cond
@@ -58,10 +59,10 @@ def run(filename, init_pop, perc_cutoff, interval):
                 lags = [tuple(curr_cycle.loc[curr_cycle['species'] == 'Escherichia coli']['lag']),
                         tuple(curr_cycle.loc[curr_cycle['species'] == 'Salmonella enterica']['lag'])]
 
-            time = calc_tolerance(init_cond, interval, lags, init_pop*perc_cutoff)
+            time = calc_tolerance(init_cond, interval, lags, init_pop_E*perc_cutoff)
             times.append((seed, culture, rep, cycle, time))
 
     times_pd = pd.DataFrame(times[1:], columns=list(times[0]))
-    times_pd.to_csv(f'times-Ecoli_init_pop{init_pop}_perc_cutoff{perc_cutoff}_interval{interval}_{filename}', index=False)
+    times_pd.to_csv(f'ttimes-Ecoli_init_pop{init_pop}_perc_cutoff{perc_cutoff}_interval{interval}_{filename}', index=False)
 
-run(input('INPUT FILENAME '), 1000, 0.01, .1)
+run(input('INPUT FILENAME '), 1000, 0.01, 0.01)

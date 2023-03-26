@@ -47,7 +47,7 @@ def odes(x, t, alpha, lags, frid=False):
         locals()[f'Eg{i}'] = x[2 * i + 4]
 
         # differential equations
-        locals()[f'dEl{i}dt'] = round(-locals()[f'El{i}'] / locals()[f'tau_lagE{i}'], 5) # slows it down but prevents negatives
+        locals()[f'dEl{i}dt'] = -locals()[f'El{i}'] / locals()[f'tau_lagE{i}']
         locals()[f'dEg{i}dt'] = (1 - alphaE) * rE * locals()[f'Eg{i}'] * (M/(M + K_M)) * (L/(L + K_L)) - kE * locals()[f'Eg{i}'] + locals()[f'El{i}'] / locals()[f'tau_lagE{i}']
 
     # S. enterica
@@ -60,7 +60,7 @@ def odes(x, t, alpha, lags, frid=False):
         locals()[f'Sl{j}'] = x[(3 + 2*nE) + 2*j]
         locals()[f'Sg{j}'] = x[(4 + 2*nE) + 2*j]
 
-        locals()[f'dSl{j}dt'] = round(-locals()[f'Sl{j}'] / locals()[f'tau_lagS{j}'], 5)
+        locals()[f'dSl{j}dt'] = -locals()[f'Sl{j}'] / locals()[f'tau_lagS{j}']
         locals()[f'dSg{j}dt'] = (1 - alphaS)*rS*locals()[f'Sg{j}']*(A/(A + K_A)) - kS*locals()[f'Sg{j}'] + locals()[f'Sl{j}']/locals()[f'tau_lagS{j}']
 
     # resource equations
