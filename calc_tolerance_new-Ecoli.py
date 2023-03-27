@@ -8,6 +8,11 @@ def calc_tolerance(init_cond, interval, lags, cutoff):
     alpha = tuple([3 for i in range(len(lags))])
 
     iter = 0
+    while sum(init_cond[3:(nE*2 + 3)]) > cutoff*2: #and iter < 100:
+        init_cond = run_phase(alpha, init_cond, lags, interval*10, 1, frid=False, inc=100) #
+        iter += 10 #
+        init_cond = init_cond[-1, :]
+
     while sum(init_cond[3:(nE*2 + 3)]) > cutoff: #and iter < 100:
         init_cond = run_phase(alpha, init_cond, lags, interval, 1, frid=False, inc=100) #
         iter += 1
@@ -63,6 +68,6 @@ def run(filename, init_pop, perc_cutoff, interval):
             times.append((seed, culture, rep, cycle, time))
 
     times_pd = pd.DataFrame(times[1:], columns=list(times[0]))
-    times_pd.to_csv(f'ttimes-Ecoli_init_pop{init_pop}_perc_cutoff{perc_cutoff}_interval{interval}_{filename}', index=False)
+    times_pd.to_csv(f'times-Ecoli_init_pop{init_pop}_perc_cutoff{perc_cutoff}_interval{interval}_{filename}', index=False)
 
 run(input('INPUT FILENAME '), 1000, 0.01, 0.01)
