@@ -1,3 +1,5 @@
+import pdb
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -148,9 +150,11 @@ def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow,
     #genotype_n_unsep2 = [genotype_n_sep2[i] + genotype_n_sep2[i+1] for i in range(0, len(genotype_n_sep2), 2)]
 
     # mutate post
-    genotype_n_sep_mut = generate_mutants(flask, copy.deepcopy(genotype_n_sep2), len(flask[0].genotypes),
+    genotype_n_sep_mut_pre = generate_mutants(flask, copy.deepcopy(genotype_n_sep2), len(flask[0].genotypes),
                                           tuple([flask[s].mu for s, spec in enumerate(flask)]), mutation_function,
                                           cycle)
+
+    genotype_n_sep_mut = [[0, i][int(i > 0)] for i in genotype_n_sep_mut_pre] #<stdin>:1: DeprecationWarning: In future, it will be an error for 'np.bool_' scalars to be interpreted as an index IF NOT USING INT()
 
     genotype_n_unsep_mut = [genotype_n_sep_mut[i] + genotype_n_sep_mut[i+1] for i in range(0, len(genotype_n_sep_mut), 2)]
 
@@ -178,10 +182,10 @@ def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_
     if mutation_func_type == "null":
         mutation_func = make_null_function(max_lag_change)
 
-    print(f"Culture type: {culture}")#
+    #print(f"Culture type: {culture}")#
     final = [('seed', 'culture', 'rep', 'cycle', 'phase_end', 'species', 'genotype', 'nlag', 'ngrow', 'ntot', 'lag', 'Ta', 'M', 'L', 'A')]
     for rep in range(reps):
-        print(f"Rep {rep}")#
+        #print(f"Rep {rep}")#
         # set up first species
         flask = Flask()
         flask.add_species(Species('Escherichia coli', mu[0]))
@@ -196,17 +200,18 @@ def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_
         inher_R = (0, 0, 0)
         # run simulation
         for cycle in range(cycles):
-            print(f"Cycle {cycle}")#
+            #print(f"Cycle {cycle}")#
             final_sub, inher_R = run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow, rep, cycle, mutation_func)
             for row in final_sub:
                 final.append(row)
 
     final_pd = pd.DataFrame(final[1:], columns=list(final[0]))
-    final_pd.to_csv(f'{culture}_seed{seed}_rep{reps}_mu{mu}_cycles{cycles}_init_R{init_R}_init_n{init_n}_init_lag{init_lag}_Ta{Ta}_alpha{alpha}_{mutation_func_type}{max_lag_change}-post.csv', index=False)
+    final_pd.to_csv(f'{culture}_seed{seed}_rep{reps}_mu{mu}_cycles{cycles}_init_R{init_R}_init_n{init_n}_init_lag{init_lag}_Ta{Ta}_alpha{alpha}_{mutation_func_type}{max_lag_change}.csv', index=False)
 
-    print("Finished")   # return
+    #print("Finished")   # return
 
-run(seed, "co", 5, (0.0002, 0.0002), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
-#run(seed, "mono", 5, (0.0002, 0.0002), 10, (1000, 1000, 0), (10, 10), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
+#run(seed, "co", 5, (0.0003, 0.0003), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
+#run(seed, "mono", 5, (0.0003, 0), 10, (1000, 1000, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0))
+
 
 # resource, cycles, t_grow, first cycle

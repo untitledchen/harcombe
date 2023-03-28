@@ -206,7 +206,7 @@ def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_
 
     print("Finished")   # return
 
-run(seed, "co", 5, (0.0002, 0.0002), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
-#run(seed, "mono", 5, (0.0002, 0.0002), 10, (1000, 1000, 0), (10, 10), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
+#run(seed, "co", 5, (0.0002, 0.0002), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
+run(seed, "mono", 5, (0.0002, 0.0002), 10, (1000, 1000, 0), (10, 0), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
 
 # resource, cycles, t_grow, first cycle

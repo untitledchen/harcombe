@@ -1,8 +1,7 @@
 import numpy as np
 from scipy.integrate import odeint
-from tolerance_odes_copy import odes
+from backup.backup2.tolerance_odes_copy import odes
 
-import matplotlib.pyplot as plt#
 
 def run_phase(alpha, init_cond, lags, t, phase, inc=1000, frid=False): #
     alpha_this = tuple([[a,0][phase-1] for a in alpha])
