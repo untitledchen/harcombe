@@ -1,5 +1,5 @@
 import pandas as pd
-from backup.backup2.run_phase import run_phase
+from hcb_sim_heatmap import run_phase
 from itertools import chain, repeat
 
 
@@ -11,8 +11,13 @@ def calc_frac(init_cond, duration, lags, init_pop_E):
     frac = sum(cells) / init_pop_E #
     return frac
 
-def run(filename, init_pop, duration):
-    data = pd.read_csv(filename, na_filter=False)
+def run_calc_frac(filename, init_pop, duration):
+    with open(filename, 'r') as file:
+        first_line = file.readline()
+    file = open(f'frac_{filename}', 'w')
+    file.write(first_line)
+
+    data = pd.read_csv(filename, header=1, na_filter=False)
 
     seed = data['seed'][0]
     culture = data['culture'][0]
@@ -44,6 +49,9 @@ def run(filename, init_pop, duration):
             fracs.append((seed, culture, rep, cycle, frac, duration))
 
     fracs_pd = pd.DataFrame(fracs[1:], columns=list(fracs[0]))
-    fracs_pd.to_csv(f'fracs-Ecoli_init_pop{init_pop}_duration{duration}_{filename}', index=False)
 
-run(input('INPUT FILENAME '), 1000, 5)
+    file.write(f'##init_pop:{init_pop}#duration:{duration}\n')
+    fracs_pd.to_csv(file, index=False, mode='a')
+    #fracs_pd.to_csv(f'fracs_init_pop{init_pop}_duration{duration}_{filename}', index=False)
+
+#run_calc_frac(input('INPUT FILENAME '), 1000, 5)
