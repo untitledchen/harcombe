@@ -6,12 +6,14 @@ from itertools import chain, repeat
 def calc_frac(init_cond, duration, lags, init_pop_E):
     nE = len(lags[0])#
     alpha = tuple([3 for i in range(len(lags))])
-    sol = run_phase(alpha, init_cond, lags, duration, 1, frid=False)
+    sol = run_phase(alpha, init_cond, lags, duration, 1, frid=False, rs=rs)
     cells = sol[-1, 3:(nE*2 + 3)]#
     frac = sum(cells) / init_pop_E #
     return frac
 
-def run_calc_frac(filename, init_pop, duration):
+def run_calc_frac(filename, init_pop, duration, rs):
+    globals()['rs'] = rs  ##
+
     with open(filename, 'r') as file:
         first_line = file.readline()
     file = open(f'frac_{filename}', 'w')

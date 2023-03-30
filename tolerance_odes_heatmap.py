@@ -1,4 +1,4 @@
-def odes(x, t, alpha, lags, frid=False):
+def odes(x, t, alpha, lags, frid=False, rs=None): ##
     n_species = len(lags)
     nE = len(lags[0])
 
@@ -28,7 +28,7 @@ def odes(x, t, alpha, lags, frid=False):
     rE = 1
     kE = 5e-9
     # S
-    rS = 0.5
+    rS = rs
     kS = 5e-9
 
     # resource consumption (c) / production (p) constants

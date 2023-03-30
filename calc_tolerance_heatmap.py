@@ -10,14 +10,16 @@ def calc_tolerance(init_cond, interval, lags, cutoff):
 
     iter = 0
     while sum(init_cond[3:(nE*2 + 3)]) > cutoff: #and iter < 100:
-        init_cond = run_phase(alpha, init_cond, lags, interval, 1, frid=False) #
+        init_cond = run_phase(alpha, init_cond, lags, interval, 1, frid=False, rs=rs) #
         iter += 1
         init_cond = init_cond[-1, :]
         #print(sum(init_cond[3:(nE*2 + 3)]))
 
     return iter * interval
 
-def run_calc_tol(filename, init_pop, perc_cutoff, interval):
+def run_calc_tol(filename, init_pop, perc_cutoff, interval, rs): ##
+    globals()['rs'] = rs ##
+
     with open(filename, 'r') as file:
         first_line = file.readline()
     file = open(f'tol_{filename}', 'w')

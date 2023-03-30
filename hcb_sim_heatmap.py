@@ -66,10 +66,10 @@ class Flask(list):
     def add_species(self, species):
         self.append(species)
 
-def run_phase(alpha, init_cond, lags, t, phase, inc=1000, frid=False): #
+def run_phase(alpha, init_cond, lags, t, phase, inc=1000, frid=False, rs=None): #
     alpha_this = tuple([[a,0][phase-1] for a in alpha])
     t_interval = np.linspace(0, t, inc)
-    sol = odeint(odes, init_cond, t_interval, args=(alpha_this, lags, frid))
+    sol = odeint(odes, init_cond, t_interval, args=(alpha_this, lags, frid, rs)) ##
 
     return sol
 
@@ -170,10 +170,12 @@ def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow,
     return final_sub, inher_R
 
 # simulation
-def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_grow, mutation_func_type, max_lag_change):
+def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_grow, mutation_func_type, max_lag_change, rs):
     globals()['seed'] = seed ##
+    globals()['rs'] = rs##
 
-    file = open(f'hcb_sim_{culture}_{seed}_met{init_R[0]}_lac{init_R[1]}.csv', 'w') # write custom text to front
+    #file = open(f'hcb_sim_{culture}_{seed}_met{init_R[0]}_lac{init_R[1]}.csv', 'w') # write custom text to front
+    file = open(f'hcb_sim_{culture}_{seed}_met{init_R[0]}_rs{rs}.csv', 'w')  # write custom text to front
     file.write(f'##culture:{culture}#seed:{seed}#rep:{reps}#mu:{mu}#cycles:{cycles}#init_R:{init_R}#init_n:{init_n}#init_lag:{init_lag}#Ta:{Ta}#alpha:{alpha}#mut_func:{mutation_func_type}#max_lag_change:{max_lag_change}\n')
 
     # make mutation function
