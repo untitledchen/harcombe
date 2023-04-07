@@ -4,15 +4,23 @@ from itertools import chain, repeat
 
 import pdb#
 
-def calc_tolerance(init_cond, interval, lags, cutoff):
+def calc_tolerance(init_cond_now, interval, lags, cutoff):
     nE = len(lags[0])  #
     alpha = tuple([3 for i in range(len(lags))])
 
     iter = 0
-    while sum(init_cond[3:(nE*2 + 3)]) > cutoff: #and iter < 100:
-        init_cond = run_phase(alpha, init_cond, lags, interval, 1, frid=False, rs=rs) #
+    while True:
+        init_cond_next = run_phase(alpha, init_cond_now, lags, interval*10, 1, frid=False, rs=rs) #
+
+        if sum(init_cond_next[-1][3:(nE*2 + 3)]) <= cutoff:
+            break
+        iter += 10
+        init_cond_now = init_cond_next[-1, :]
+
+    while sum(init_cond_now[3:(nE*2 + 3)]) > cutoff: #and iter < 100:
+        init_cond_now = run_phase(alpha, init_cond_now, lags, interval, 1, frid=False, rs=rs) #
         iter += 1
-        init_cond = init_cond[-1, :]
+        init_cond_now = init_cond_now[-1, :]
         #print(sum(init_cond[3:(nE*2 + 3)]))
 
     return iter * interval
@@ -66,4 +74,4 @@ def run_calc_tol(filename, init_pop, perc_cutoff, interval, rs): ##
     times_pd.to_csv(file, index=False, mode='a')
     #times_pd.to_csv(f'times_init_pop{init_pop}_perc_cutoff{perc_cutoff}_interval{interval}_{filename}', index=False)
 
-#run_calc_tol(input('x'), 1000, 0.01, 0.1)
+#run_calc_tol(input('x'), 1000, 0.01, 0.1, 0.5)

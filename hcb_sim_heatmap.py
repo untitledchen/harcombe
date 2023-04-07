@@ -113,7 +113,7 @@ def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow,
     lags1 = [[i.lag for i in j.genotypes] for j in flask]
 
     # phase 1
-    sol1 = run_phase(alpha, init_cond, lags1, Ta, 1)
+    sol1 = run_phase(alpha, init_cond, lags1, Ta, 1, rs=rs) ##
 
     # collect 1
     genotype_n_sep1 = list(sol1[-1, 3:])
@@ -130,13 +130,13 @@ def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow,
 
     # init_cond2
     init_cond = list(init_R)
-    for i in range(0, len(genotype_n_sep1), 2): ##
+    for i in range(0, len(genotype_n_sep1), 2):
         init_cond.append(genotype_n_sep1[i])
         init_cond.append(genotype_n_sep1[i + 1])
     lags2 = [[i.lag for i in j.genotypes] for j in flask]
 
     # phase 2
-    sol2 = run_phase(alpha, init_cond, lags2, t_grow, 2)
+    sol2 = run_phase(alpha, init_cond, lags2, t_grow, 2, rs=rs) ##
 
     # collect 2
     genotype_n_sep2 = list(sol2[-1, 3:])

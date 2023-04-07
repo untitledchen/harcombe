@@ -25,6 +25,7 @@
 # you can fix tuple declaration in the analog later
 
 import random
+import time
 import pandas as pd
 from hcb_sim_heatmap import run
 from calc_tolerance_heatmap import run_calc_tol
@@ -83,13 +84,15 @@ rs_incs = [0.25, 0.5, 0.75, 1.0, 1.25, 1.50, 1.75, 2.0]
 seed = 0
 mdkratios = [("seed", "met", "rratio", "mdkratio")]
 fracratios = [("seed", "met", "rratio", "fracratio")]
+
+begin = time.perf_counter()#
 for met_inc in met_incs:
     seed += 1
     print(seed)#
 
     for rs_inc in rs_incs:
-        #run(seed, "mono", 5, (0.0003, 0), 10, (met_inc, 1000, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0), rs_inc)
-        #run(seed, "co", 5, (0.0003, 0.0003), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1), rs_inc)
+        run(seed, "mono", 10, (0.0005, 0), 10, (met_inc, 1000, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0), rs_inc)
+        run(seed, "co", 10, (0.0005, 0.0005), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1), rs_inc)
 
         file_mono = f"hcb_sim_mono_{seed}_met{met_inc}_rs{rs_inc}.csv"
         file_co = f"hcb_sim_co_{seed}_met1_rs{rs_inc}.csv"
@@ -115,6 +118,9 @@ for met_inc in met_incs:
         fracratio = run_evoratio(frac_file_mono, frac_file_co, "frac")
 
         fracratios.append((seed, met_inc, 1/rs_inc, fracratio)) # this is the ratio of the logged fracs!!!
+
+    print(time.perf_counter() - begin)  #
+    begin = time.perf_counter()  #
 
 mdkratios_pd = pd.DataFrame(mdkratios[1:], columns=list(mdkratios[0]))
 mdkratios_pd.to_csv(f'mdkratios_met{met_incs}_rs{rs_incs}.csv', index=False)
