@@ -1,0 +1,4 @@
+4/15/23
+tolerance_odes_heatmap_rev.py
+- set up to use numpy arrays for populations and do vector arithmetic instead of using locals()
+* see if you can keep x as one whole or just 2

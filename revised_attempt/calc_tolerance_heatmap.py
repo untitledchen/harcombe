@@ -2,34 +2,50 @@ import pandas as pd
 from hcb_sim_heatmap import run_phase
 from itertools import chain, repeat
 
+import pdb#
 
-def calc_frac(init_cond, duration, lags, init_pop_E):
-    nE = len(lags[0])
+def calc_tolerance(init_cond_now, interval, lags, cutoff):
+    nE = len(lags[0])  #
     alpha = tuple([3 for i in range(len(lags))])
-    sol = run_phase(alpha, init_cond, lags, duration, 1, frid=False, rs=rs)
-    cells = sol[-1, 3:(nE*2 + 3)]
-    frac = sum(cells) / init_pop_E
-    return frac
 
-def run_calc_frac(filename, init_pop, duration, rs):
-    globals()['rs'] = rs  ##
+    iter = 0
+    while True:
+        init_cond_next = run_phase(alpha, init_cond_now, lags, interval*10, 1, frid=False, rs=rs) #
+
+        if sum(init_cond_next[-1][3:(nE*2 + 3)]) <= cutoff:
+            break
+        iter += 10
+        init_cond_now = init_cond_next[-1, :]
+
+    while sum(init_cond_now[3:(nE*2 + 3)]) > cutoff: #and iter < 100:
+        init_cond_now = run_phase(alpha, init_cond_now, lags, interval, 1, frid=False, rs=rs) #
+        iter += 1
+        init_cond_now = init_cond_now[-1, :]
+        #print(sum(init_cond[3:(nE*2 + 3)]))
+
+    return iter * interval
+
+def run_calc_tol(filename, init_pop, perc_cutoff, interval, rs): ##
+    globals()['rs'] = rs ##
 
     with open(filename, 'r') as file:
         first_line = file.readline()
-    file = open(f'frac_{filename}', 'w')
+    file = open(f'tol_{filename}', 'w')
     file.write(first_line)
 
     data = pd.read_csv(filename, header=1, na_filter=False)
 
     seed = data['seed'][0]
+    #seed = filename.split('_')[2][:3]
     culture = data['culture'][0]
+    #culture = filename.split('_')[1]
 
     reps = max(data['rep']) + 1
     cycles = max(data['cycle']) + 1
 
     p2_data = data.loc[data['phase_end'] == 2]
 
-    fracs = [tuple(["seed", "culture", "rep", "cycle", "frac", "duration"])]
+    times = [tuple(["seed", "culture", "rep", "cycle", "tol_time"])]
     for rep in range(reps):
         curr_rep = p2_data.loc[p2_data['rep'] == rep]
         for cycle in range(cycles):
@@ -49,12 +65,13 @@ def run_calc_frac(filename, init_pop, duration, rs):
                 lags = [tuple(curr_cycle.loc[curr_cycle['species'] == 'Escherichia coli']['lag']),
                         tuple(curr_cycle.loc[curr_cycle['species'] == 'Salmonella enterica']['lag'])]
 
-            frac = calc_frac(init_cond, duration, lags, init_pop_E)
-            fracs.append((seed, culture, rep, cycle, frac, duration))
+            time = calc_tolerance(init_cond, interval, lags, init_pop_E*perc_cutoff)
+            times.append((seed, culture, rep, cycle, time))
 
-    fracs_pd = pd.DataFrame(fracs[1:], columns=list(fracs[0]))
+    times_pd = pd.DataFrame(times[1:], columns=list(times[0]))
 
-    file.write(f'##init_pop:{init_pop}#duration:{duration}\n')
-    fracs_pd.to_csv(file, index=False, mode='a')
+    file.write(f'##init_pop:{init_pop}#perc_cutoff:{perc_cutoff}#interval:{interval}\n')
+    times_pd.to_csv(file, index=False, mode='a')
+    #times_pd.to_csv(f'times_init_pop{init_pop}_perc_cutoff{perc_cutoff}_interval{interval}_{filename}', index=False)
 
-#run_calc_frac(input('INPUT FILENAME '), 1000, 5)
+#run_calc_tol(input('x'), 1000, 0.01, 0.1, 0.5)
