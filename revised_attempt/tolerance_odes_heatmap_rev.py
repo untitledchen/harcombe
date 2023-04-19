@@ -9,19 +9,18 @@ def odes(x, t, alpha, lags, frid=False):
     A = x[2]
 
     # populations arrays
-    n_species = len(lags)
     nE = len(lags[0])
+    nS = len(lags[1])
 
-    if n_species == 2:
-        nS = len(lags[1])
-
-        Sgs = x[(2 * nE + 3):(nS + 2 * nE + 3)]
-        Sls = x[(nS + 2 * nE + 3):(2 * nS + 2 * nE + 3)]
-    else:
-        nS = 0
+    ## assume np array!
+    lagsE = lags[0]
+    lagsS = lags[1]
 
     Egs = x[3:(nE + 3)]
-    Els = x[(nE + 3):(2*nE + 3)]
+    Els = x[(nE + 3):(2 * nE + 3)]
+
+    Sgs = x[(2 * nE + 3):(nS + 2 * nE + 3)]
+    Sls = x[(nS + 2 * nE + 3):]
 
     ## CONSTANTS
     # half-saturation constants
@@ -54,17 +53,13 @@ def odes(x, t, alpha, lags, frid=False):
 
     ##
 
+    # unneeded
+    # dEls = np.zeros(nE)
+    # dEgs = np.zeros(nE)
 
-
-    for i in range(nE):
-        locals()[f'tau_lagE{i}'] = lags[0][i]
-
-        locals()[f'El{i}'] = x[2 * i + 3]
-        locals()[f'Eg{i}'] = x[2 * i + 4]
-
-        # differential equations
-        locals()[f'dEl{i}dt'] = -locals()[f'El{i}'] / locals()[f'tau_lagE{i}']
-        locals()[f'dEg{i}dt'] = (1 - alphaE) * rE * locals()[f'Eg{i}'] * (M/(M + K_M)) * (L/(L + K_L)) - kE * locals()[f'Eg{i}'] + locals()[f'El{i}'] / locals()[f'tau_lagE{i}']
+    dEls = -Els / lagsE
+    dEgs = Egs * (1 - alphaE) * rE * (M/(M + K_M)) * (L/(L + K_L)) - Egs * kE + Els / lagsE
+    ## stop
 
     # S. enterica
     if n_species == 2:

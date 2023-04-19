@@ -2,3 +2,8 @@
 tolerance_odes_heatmap_rev.py
 - set up to use numpy arrays for populations and do vector arithmetic instead of using locals()
 * see if you can keep x as one whole or just 2
+
+4/18/23
+tolerance_odes_heatmap_rev.py
+- set up numpy arrays for Es
+* work on S now that there isn't a check for nS = 0; prob if
