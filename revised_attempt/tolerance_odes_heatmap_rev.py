@@ -2,6 +2,8 @@
 # x is a numpy array
 # split x into resources as variables and populations g and l, as numpy arrays
 
+import numpy as np
+
 def odes(x, t, alpha, lags, frid=False):
     #  resources vars
     M = x[0]
@@ -10,17 +12,14 @@ def odes(x, t, alpha, lags, frid=False):
 
     # populations arrays
     nE = len(lags[0])
-    nS = len(lags[1])
 
     ## assume np array!
     lagsE = lags[0]
-    lagsS = lags[1]
 
     Egs = x[3:(nE + 3)]
     Els = x[(nE + 3):(2 * nE + 3)]
 
-    Sgs = x[(2 * nE + 3):(nS + 2 * nE + 3)]
-    Sls = x[(nS + 2 * nE + 3):]
+    alphaE = alpha[0]
 
     ## CONSTANTS
     # half-saturation constants
@@ -35,11 +34,10 @@ def odes(x, t, alpha, lags, frid=False):
 
     # growth / decay constants
     # E
-    alphaE = alpha[0]
     rE = 1
     kE = 5e-9
     # S
-    rS = rs
+    rS = 0.5 ##
     kS = 5e-9
 
     # resource consumption (c) / production (p) constants
@@ -53,50 +51,41 @@ def odes(x, t, alpha, lags, frid=False):
 
     ##
 
-    # unneeded
-    # dEls = np.zeros(nE)
-    # dEgs = np.zeros(nE)
-
     dEls = -Els / lagsE
     dEgs = Egs * (1 - alphaE) * rE * (M/(M + K_M)) * (L/(L + K_L)) - Egs * kE + Els / lagsE
-    ## stop
 
     # S. enterica
-    if n_species == 2:
+    if len(lags) > 1:
+        nS = len(lags[1])
+        lagsS = lags[1]
         alphaS = alpha[1]
 
-    for j in range(nS):
-        locals()[f'tau_lagS{j}'] = lags[1][j]
+        Sgs = x[(2 * nE + 3):(nS + 2 * nE + 3)]
+        Sls = x[(nS + 2 * nE + 3):]
 
-        locals()[f'Sl{j}'] = x[(3 + 2*nE) + 2*j]
-        locals()[f'Sg{j}'] = x[(4 + 2*nE) + 2*j]
+        dSls = -Sls / lagsS
+        dSgs = Sgs * (1 - alphaS) * rS * (A / (A + K_A)) - Sgs * kS + Sls / lagsS
+    else:
+        Sgs = []
+        Sls = []
 
-        locals()[f'dSl{j}dt'] = -locals()[f'Sl{j}'] / locals()[f'tau_lagS{j}']
-        locals()[f'dSg{j}dt'] = (1 - alphaS)*rS*locals()[f'Sg{j}']*(A/(A + K_A)) - kS*locals()[f'Sg{j}'] + locals()[f'Sl{j}']/locals()[f'tau_lagS{j}']
+        dSgs = []
+        dSls = []
 
     # resource equations
-    sigma_strainsE = 0
-    for i in range(nE):
-        sigma_strainsE += locals()[f'Eg{i}']
-    sigma_strainsS = 0
-    for j in range(nS):
-        sigma_strainsS += locals()[f'Sg{j}']
+    sigmaE = np.sum(Egs)
+    sigmaS = np.sum(Sgs)
 
     # M
-    dMdt = (-sigma_strainsE * cM * (M / (M + K_M)) * (L / (L + K_L)) + sigma_strainsS * pM * rS * (A/(A + K_A)) - kM * M) * (1, 0)[frid]
+    dMdt = (-sigmaE * cM * (M / (M + K_M)) * (L / (L + K_L)) + sigmaS * pM * rS * (A/(A + K_A)) - kM * M) * (1, 0)[frid]
 
     # L
-    dLdt = (-sigma_strainsE * cL * (M / (M + K_M)) * (L / (L + K_L)) - kL * L) * (1, 0)[frid]
+    dLdt = (-sigmaE * cL * (M / (M + K_M)) * (L / (L + K_L)) - kL * L) * (1, 0)[frid]
 
     # A
-    dAdt = (sigma_strainsE * pA * rE * (M / (M + K_M)) * (L / (L + K_L)) - sigma_strainsS * cA * (A/(A + K_A)) - kA * A) * (1, 0)[frid]
+    dAdt = (sigmaE * pA * rE * (M / (M + K_M)) * (L / (L + K_L)) - sigmaS * cA * (A/(A + K_A)) - kA * A) * (1, 0)[frid]
 
-    to_return = [dMdt, dLdt, dAdt]
-    for i in range(nE):
-        to_return.append(locals()[f'dEl{i}dt'])
-        to_return.append(locals()[f'dEg{i}dt'])
-    for j in range(nS):
-        to_return.append(locals()[f'dSl{j}dt'])
-        to_return.append(locals()[f'dSg{j}dt'])
+    resources = [dMdt, dLdt, dAdt]
+    to_return = np.concatenate((resources, dEgs, dEls, dSgs, dSls))
 
     return to_return

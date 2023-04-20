@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
-from tolerance_odes_heatmap import odes
+from tolerance_odes_heatmap_rev import odes
 
 import random
 import copy
@@ -66,7 +66,7 @@ class Flask(list):
 def run_phase(alpha, init_cond, lags, t, phase, inc=1000, frid=False, rs=None): #
     alpha_this = tuple([[a,0][phase-1] for a in alpha])
     t_interval = np.linspace(0, t, inc)
-    sol = odeint(odes, init_cond, t_interval, args=(alpha_this, lags, frid, rs)) ##
+    sol = odeint(odes, init_cond, t_interval, args=(alpha_this, lags, frid)) ##
 
     return sol
 
@@ -98,46 +98,50 @@ def generate_mutants(flask, genotype_n_sep, nE, mu, mutation_function, cycle):
 
     return genotype_n_sep
 
+
+## start
 def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow, rep, cycle, mutation_function):
     final_sub = []
 
     # init_cond1
     init_cond = [init_R[0] + inher_R[0], init_R[1] + inher_R[1], init_R[2] + inher_R[2]]
+
     for species in flask:
+        # should not reset that which is already appended
+        Gs = []
+        Ls = []
         for genotype in species.genotypes:
-            init_cond.append(genotype.n)
-            init_cond.append(0)
+            Gs.append(genotype.n)
+            Ls.append(0)
+        init_cond += Gs + Ls
+    init_cond = np.array(init_cond)#
     lags1 = [[i.lag for i in j.genotypes] for j in flask]
 
     # phase 1
-    sol1 = run_phase(alpha, init_cond, lags1, Ta, 1, rs=rs) ##
+    sol = run_phase(alpha, init_cond, lags1, Ta, 1, rs=rs) ##
 
     # collect 1
-    genotype_n_sep1 = list(sol1[-1, 3:])
+    sol1 = sol[-1]
 
     # append 1
-    nE = len(lags1[0])
-    genotype_n_unsep1 = [genotype_n_sep1[i] + genotype_n_sep1[i + 1] for i in range(0, len(genotype_n_sep1), 2)]
     for s, species in enumerate(flask):
+        N = len(lags1[s])
+        N_growing = sol1[3:N]
+        N_lagging = sol1[N:2*N]
         for i, genotype in enumerate(species.genotypes):
-            final_sub.append((seed, culture, rep, cycle, 1, species.name, genotype.name, genotype_n_sep1[2*i + (0, 2*nE)[s]], genotype_n_sep1[2*i + (1, 2*nE + 1)[s]], genotype_n_unsep1[i + (0, nE)[s]], genotype.lag, Ta, sol1[-1][0], sol1[-1][1], sol1[-1][2]))
-
-    # mutation
-    #genotype_n_sep_mut = generate_mutants(flask, copy.deepcopy(genotype_n_sep1), len(flask[0].genotypes), tuple([flask[s].mu for s, spec in enumerate(flask)]), mutation_function, cycle) #
+            final_sub.append((rep, cycle, 1, species.name, genotype.name, N_growing[i], N_lagging[i], genotype.lag, sol1[0], sol1[1], sol1[2]))
 
     # init_cond2
-    init_cond = list(init_R)
-    for i in range(0, len(genotype_n_sep1), 2):
-        init_cond.append(genotype_n_sep1[i])
-        init_cond.append(genotype_n_sep1[i + 1])
+    init_cond = list(init_R) + list(sol1[3:]) ## gross
     lags2 = [[i.lag for i in j.genotypes] for j in flask]
 
     # phase 2
-    sol2 = run_phase(alpha, init_cond, lags2, t_grow, 2, rs=rs) ##
+    sol = run_phase(alpha, init_cond, lags2, t_grow, 2, rs=rs) ##
 
     # collect 2
-    genotype_n_sep2 = list(sol2[-1, 3:])
-    #genotype_n_unsep2 = [genotype_n_sep2[i] + genotype_n_sep2[i+1] for i in range(0, len(genotype_n_sep2), 2)]
+    sol2 = sol[-1, 3:]
+
+    ##stop
 
     # mutate post
     genotype_n_sep_mut_pre = generate_mutants(flask, copy.deepcopy(genotype_n_sep2), len(flask[0].genotypes),
@@ -179,8 +183,8 @@ def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_
     if mutation_func_type == "null":
         mutation_func = make_null_function(max_lag_change)
 
-    #print(f"Culture type: {culture}")#
-    final = [('seed', 'culture', 'rep', 'cycle', 'phase_end', 'species', 'genotype', 'nlag', 'ngrow', 'ntot', 'lag', 'Ta', 'M', 'L', 'A')]
+    print(f"Culture type: {culture}")#
+    final = [('rep', 'cycle', 'phase_end', 'species', 'genotype', 'ngrow', 'nlag', 'lag', 'M', 'L', 'A')]
     for rep in range(reps):
         #print(f"Rep {rep}")#
         # set up first species
@@ -197,7 +201,7 @@ def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_
         inher_R = (0, 0, 0)
         # run simulation
         for cycle in range(cycles):
-            #print(f"Cycle {cycle}")#
+            print(f"Cycle {cycle}")#
             final_sub, inher_R = run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow, rep, cycle, mutation_func)
             for row in final_sub:
                 final.append(row)
@@ -207,7 +211,10 @@ def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_
     final_pd.to_csv(file, header=True, index=False, mode="a")
     #final_pd.to_csv(f'{culture}_seed{seed}_rep{reps}_mu{mu}_cycles{cycles}_init_R{init_R}_init_n{init_n}_init_lag{init_lag}_Ta{Ta}_alpha{alpha}_{mutation_func_type}{max_lag_change}.csv', index=False)
 
-    #print("Finished")
+    print("Finished")
 
 #run(seed, "co", 5, (0.0003, 0.0003), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
 #run(166, "mono", 5, (0.0003, 0), 10, (1000, 1000, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0))
+
+run(499, "mono", 5, (0.0003, 0), 10, (1000, 1000, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0), 0.5)
+#run(499, "co", 5, (0.0003, 0.0003), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1), 0.5)

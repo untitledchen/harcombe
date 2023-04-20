@@ -7,3 +7,16 @@ tolerance_odes_heatmap_rev.py
 tolerance_odes_heatmap_rev.py
 - set up numpy arrays for Es
 * work on S now that there isn't a check for nS = 0; prob if
+
+4/19/23
+tolerance_odes_heatmap_rev.py
+- numpification
+* changes to other files: needs to give numpy array M L A Egs Els Sgs Sls, lags needs to have two lists
+hcb_sim_heatmap_rev.py
+- changed order in output to grow > lag
+* change throughout
+- remove tot from output
+- remove what can be placed in top parameters from output
+* watch for extraneous effects
+
+* fix places that use n, 0 format e.g. generate_mutants
