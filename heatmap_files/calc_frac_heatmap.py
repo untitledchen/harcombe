@@ -1,5 +1,5 @@
 import pandas as pd
-from hcb_sim_heatmap import run_phase
+from hcb_sim_heatmap_rev import run_phase
 from itertools import chain, repeat
 
 

@@ -20,3 +20,7 @@ hcb_sim_heatmap_rev.py
 * watch for extraneous effects
 
 * fix places that use n, 0 format e.g. generate_mutants
+
+4/20/23
+hcb_sim_heatmap_rev.py
+* need to fix growing lagging

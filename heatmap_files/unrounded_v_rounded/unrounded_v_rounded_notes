@@ -1,0 +1,4 @@
+note that
+unrounded allows for negative counts
+but is significantly faster
+in the final output, while phase 2 counts differ, phase 1 counts are essentially identical

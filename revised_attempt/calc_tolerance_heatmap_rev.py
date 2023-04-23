@@ -1,5 +1,5 @@
 import pandas as pd
-from hcb_sim_heatmap import run_phase
+from hcb_sim_heatmap_rev import run_phase
 from itertools import chain, repeat
 
 import pdb#
@@ -35,8 +35,6 @@ def run_calc_tol(filename, init_pop, perc_cutoff, interval, rs): ##
 
     data = pd.read_csv(filename, header=1, na_filter=False)
 
-    seed = data['seed'][0]
-    #seed = filename.split('_')[2][:3]
     culture = data['culture'][0]
     #culture = filename.split('_')[1]
 
@@ -45,12 +43,13 @@ def run_calc_tol(filename, init_pop, perc_cutoff, interval, rs): ##
 
     p2_data = data.loc[data['phase_end'] == 2]
 
-    times = [tuple(["seed", "culture", "rep", "cycle", "tol_time"])]
+    times = [tuple(["culture", "rep", "cycle", "tol_time"])]
     for rep in range(reps):
         curr_rep = p2_data.loc[p2_data['rep'] == rep]
         for cycle in range(cycles):
             curr_cycle = curr_rep.loc[curr_rep['cycle'] == cycle]
 
+            curr_cycle = curr_cycle.assign(ntot=curr_cycle['ngrow'] + curr_cycle['nlag'])  ##
             n_set = (curr_cycle['ntot'] / sum(curr_cycle['ntot'])) * init_pop # for each genotype
 
             E_frac = sum(curr_cycle.loc[curr_cycle['species'] == 'Escherichia coli']['ntot'])  / sum(curr_cycle['ntot'])
@@ -66,7 +65,7 @@ def run_calc_tol(filename, init_pop, perc_cutoff, interval, rs): ##
                         tuple(curr_cycle.loc[curr_cycle['species'] == 'Salmonella enterica']['lag'])]
 
             time = calc_tolerance(init_cond, interval, lags, init_pop_E*perc_cutoff)
-            times.append((seed, culture, rep, cycle, time))
+            times.append((culture, rep, cycle, time))
 
     times_pd = pd.DataFrame(times[1:], columns=list(times[0]))
 

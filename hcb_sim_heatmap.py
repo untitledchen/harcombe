@@ -1,4 +1,5 @@
 import pdb
+import time
 
 import pandas as pd
 import numpy as np
@@ -215,5 +216,7 @@ def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_
 #run(seed, "co", 5, (0.0003, 0.0003), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
 #run(166, "mono", 5, (0.0003, 0), 10, (1000, 1000, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0))
 
-
+#begin = time.perf_counter()  #
+#run(499, "mono", 10, (0.0005, 0), 10, (1000, 1000, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0), 0.5)
+#print(f"{time.perf_counter() - begin}")  #
 # resource, cycles, t_grow, first cycle
