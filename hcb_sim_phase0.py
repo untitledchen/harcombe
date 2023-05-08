@@ -62,7 +62,7 @@ class Flask(list):
     def add_species(self, species):
         self.append(species)
 
-def run_phase(alpha, init_cond, lags, t, phase, inc=1000, frid=False, rs=None): #
+def run_phase(alpha, init_cond, lags, t, phase, inc=1000, frid=False): #
     alpha_this = tuple([[a,0][phase-1] for a in alpha])
     t_interval = np.linspace(0, t, inc)
     sol = odeint(odes, init_cond, t_interval, args=(alpha_this, lags, frid)) ##
@@ -105,8 +105,7 @@ def generate_mutants(flask, n, mu, mutation_function, cycle):
 
     return n, ct
 
-## start
-def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow, rep, cycle, mutation_function):
+def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow, rep, cycle, mutation_function, x):
     final_sub = []
 
     # init_cond1
@@ -123,8 +122,14 @@ def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow,
     init_cond = np.array(init_cond)#
     lags1 = [[i.lag for i in j.genotypes] for j in flask]
 
+    # # phase 0
+    # sol = run_phase(alpha, init_cond, lags1, x, 2)
+    # init_cond = sol[-1] / 2
+    # init_cond[0:3] = init_cond[0:3] + init_R
+    # ##print(init_cond)
+
     # phase 1
-    sol = run_phase(alpha, init_cond, lags1, Ta, 1, rs=rs) ##
+    sol = run_phase(alpha, init_cond, lags1, Ta, 1) ##
 
     # collect 1
     sol1 = sol[-1]
@@ -143,7 +148,7 @@ def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow,
     lags2 = [[i.lag for i in j.genotypes] for j in flask]
 
     # phase 2
-    sol = run_phase(alpha, init_cond, lags2, t_grow, 2, rs=rs) ##
+    sol = run_phase(alpha, init_cond, lags2, t_grow, 2) ##
 
     # collect 2
     sol2 = sol[-1]
@@ -172,12 +177,11 @@ def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow,
     return final_sub, inher_R
 
 # simulation
-def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_grow, mutation_func_type, max_lag_change, rs):
+def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_grow, mutation_func_type, max_lag_change, x):
     globals()['seed'] = seed ##
-    globals()['rs'] = rs##
 
     #file = open(f'hcb_sim_{culture}_{seed}_met{init_R[0]}_lac{init_R[1]}.csv', 'w') # write custom text to front
-    file = open(f'hcb_sim_{culture}_{seed}_met{init_R[0]}_rs{rs}.csv', 'w')  # write custom text to front
+    file = open(f'hcb_sim_{culture}_{seed}_met{init_R[0]}_phase0{x}.csv', 'w')  # write custom text to front
     file.write(f'##culture:{culture}#seed:{seed}#rep:{reps}#mu:{mu}#cycles:{cycles}#init_R:{init_R}#init_n:{init_n}#init_lag:{init_lag}#Ta:{Ta}#alpha:{alpha}#mut_func:{mutation_func_type}#max_lag_change:{max_lag_change}\n')
 
     # make mutation function
@@ -201,22 +205,23 @@ def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_
 
         inher_R = (0, 0, 0)
         # run simulation
+
+        # the rest
         for cycle in range(cycles):
             #print(f"Cycle {cycle}")#
-            final_sub, inher_R = run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow, rep, cycle, mutation_func)
+            final_sub, inher_R = run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow, rep, cycle, mutation_func, x)
             for row in final_sub:
                 final.append(row)
 
     final_pd = pd.DataFrame(final[1:], columns=list(final[0]))
-    #with open(f'hcb_sim_{culture}_{seed}.csv', 'a') as file: # write custom text to front
     final_pd.to_csv(file, header=True, index=False, mode="a")
     #final_pd.to_csv(f'{culture}_seed{seed}_rep{reps}_mu{mu}_cycles{cycles}_init_R{init_R}_init_n{init_n}_init_lag{init_lag}_Ta{Ta}_alpha{alpha}_{mutation_func_type}{max_lag_change}.csv', index=False)
 
     #print("Finished")
 
-#run(seed, "co", 5, (0.0003, 0.0003), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
-#run(166, "mono", 5, (0.0003, 0), 10, (1000, 1000, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0))
-
+for x in [0, 1]: #, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
+    #run(166, "mono", 5, (0.0003, 0), 10, (1000, 1000, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0), x)
+    run(166, "co", 5, (0.0003, 0.0003), 10, (1, 1000, 0), (10, 10), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1), x)
 # begin_tot = time.perf_counter()  #
 #run(499, "mono", 10, (0.0005, 0), 10, (1000, 1000, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0), 0.5)
 # print(f"{time.perf_counter() - begin_tot}")  #

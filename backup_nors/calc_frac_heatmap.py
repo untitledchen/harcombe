@@ -1,18 +1,17 @@
 import pandas as pd
-from hcb_sim_heatmap import run_phase
+from hcb_sim_heatmap_rev import run_phase
 from itertools import chain, repeat
 
 
 def calc_frac(init_cond, duration, lags, init_pop_E):
-    nE = len(lags[0])
+    nE = len(lags[0])#
     alpha = tuple([3 for i in range(len(lags))])
-    sol = run_phase(alpha, init_cond, lags, duration, 1, frid=False, rs=rs)
-    cells = sol[-1, 3:(nE*2 + 3)]
-    frac = sum(cells) / init_pop_E
+    sol = run_phase(alpha, init_cond, lags, duration, 1, frid=False)
+    cells = sol[-1, 3:(nE*2 + 3)]#
+    frac = sum(cells) / init_pop_E #
     return frac
 
-def run_calc_frac(filename, init_pop, duration, rs):
-    globals()['rs'] = rs  ##
+def run_calc_frac(filename, init_pop, duration):
 
     with open(filename, 'r') as file:
         first_line = file.readline()
@@ -56,5 +55,6 @@ def run_calc_frac(filename, init_pop, duration, rs):
 
     file.write(f'##init_pop:{init_pop}#duration:{duration}\n')
     fracs_pd.to_csv(file, index=False, mode='a')
+    #fracs_pd.to_csv(f'fracs_init_pop{init_pop}_duration{duration}_{filename}', index=False)
 
 #run_calc_frac(input('INPUT FILENAME '), 1000, 5)

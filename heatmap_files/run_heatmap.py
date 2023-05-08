@@ -21,7 +21,7 @@ import pandas as pd
 from revised_attempt.hcb_sim_heatmap import run
 from revised_attempt.calc_tolerance_heatmap import run_calc_tol
 from revised_attempt.calc_frac_heatmap import run_calc_frac
-from revised_attempt.evoratio import run_evoratio
+from evoratio import run_evoratio
 
 # met_incs = [250, 500, 750, 1000, 1250, 1500, 1750, 2000]
 # lac_incs = [250, 500, 750, 1000, 1250, 1500, 1750, 2000]
