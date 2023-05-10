@@ -24,3 +24,7 @@ hcb_sim_heatmap_rev.py
 4/20/23
 hcb_sim_heatmap_rev.py
 * need to fix growing lagging
+
+for next time:
+need to find out what about tolerance_odes is wrong in calc_frac
+Els is a list

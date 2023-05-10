@@ -1,5 +1,5 @@
 import pandas as pd
-from hcb_sim import run_phase
+from hcb_sim_heatmap import run_phase
 from itertools import chain, repeat
 
 import pdb
@@ -8,7 +8,7 @@ import pdb
 def calc_frac(init_cond, duration, lags, init_pop_E):
     nE = len(lags[0])
     alpha = tuple([3 for i in range(len(lags))])
-    sol = run_phase(alpha, init_cond, lags, duration, 1, frid=False)
+    sol = run_phase(alpha, init_cond, lags, duration, 1, frid=False, rs=0.5)
     cells = sol[-1, 3:(nE*2 + 3)]
     frac = sum(cells) / init_pop_E
     return frac

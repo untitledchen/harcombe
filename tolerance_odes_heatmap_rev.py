@@ -1,6 +1,7 @@
 # M L A El1 Eg1 El2 Eg2 Sl1 Sg1
 # x is a numpy array
 # split x into resources as variables and populations g and l, as numpy arrays
+import pdb
 
 import numpy as np
 
@@ -14,7 +15,7 @@ def odes(x, t, alpha, lags, frid=False):
     nE = len(lags[0])
 
     ## assume np array!
-    lagsE = lags[0]
+    lagsE = np.array(lags[0])
 
     Egs = x[3:(nE + 3)]
     Els = x[(nE + 3):(2 * nE + 3)]
@@ -57,7 +58,7 @@ def odes(x, t, alpha, lags, frid=False):
     # S. enterica
     if len(lags) > 1:
         nS = len(lags[1])
-        lagsS = lags[1]
+        lagsS = np.array(lags[1])
         alphaS = alpha[1]
 
         Sgs = x[(2 * nE + 3):(nS + 2 * nE + 3)]
@@ -89,3 +90,6 @@ def odes(x, t, alpha, lags, frid=False):
     to_return = np.concatenate((resources, dEgs, dEls, dSgs, dSls))
 
     return to_return
+
+x = [1000, 1000, 0, 5, 0, 5, 0]
+print(odes(x, 0, (3, 3), [[1], 1]))

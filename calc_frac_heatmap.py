@@ -2,8 +2,6 @@ import pandas as pd
 from hcb_sim import run_phase
 from itertools import chain, repeat
 
-import pdb
-
 
 def calc_frac(init_cond, duration, lags, init_pop_E):
     nE = len(lags[0])
@@ -13,26 +11,29 @@ def calc_frac(init_cond, duration, lags, init_pop_E):
     frac = sum(cells) / init_pop_E
     return frac
 
-def run_calc_frac(filename, init_pop, duration, last_cyc_only=False, file_write=True):
+def run_calc_frac(filename, init_pop, duration, rs):
+    globals()['rs'] = rs  ##
+
+    with open(filename, 'r') as file:
+        first_line = file.readline()
+    file = open(f'fractest_{filename}', 'w')
+    file.write(first_line)
+
     data = pd.read_csv(filename, header=1, na_filter=False)
 
+    # seed = data['seed'][0]
     culture = data['culture'][0]
 
     reps = max(data['rep']) + 1
     cycles = max(data['cycle']) + 1
 
-    data['ntot'] = data['ngrow'] + data['nlag']
+    data['ntot'] = data['ngrow'] + data['nlag'] ##
     p2_data = data.loc[data['phase_end'] == 2]
 
-    fracs = [tuple(["culture", "rep", "cycle", "frac", "duration"])]
-
-    set_cycle = 0
-    if last_cyc_only:
-        set_cycle = cycles - 1
+    fracs = [tuple(["culture", "rep", "cycle", "frac", "duration"])]    ##
     for rep in range(reps):
         curr_rep = p2_data.loc[p2_data['rep'] == rep]
-        cycle = set_cycle
-        while cycle < cycles:
+        for cycle in range(cycles):
             curr_cycle = curr_rep.loc[curr_rep['cycle'] == cycle]
 
             n_set = (curr_cycle['ntot'] / sum(curr_cycle['ntot'])) * init_pop # for each genotype
@@ -50,21 +51,11 @@ def run_calc_frac(filename, init_pop, duration, last_cyc_only=False, file_write=
                         tuple(curr_cycle.loc[curr_cycle['species'] == 'Salmonella enterica']['lag'])]
 
             frac = calc_frac(init_cond, duration, lags, init_pop_E)
-            fracs.append((culture, rep, cycle, frac, duration))
-
-            cycle += 1
+            fracs.append((culture, rep, cycle, frac, duration))  ##
 
     fracs_pd = pd.DataFrame(fracs[1:], columns=list(fracs[0]))
 
-    if file_write:
-        with open(filename, 'r') as file:
-            first_line = file.readline()
-        file = open(f'frac_{filename}', 'w')
-        file.write(first_line)
-        file.write(f'##init_pop:{init_pop}#duration:{duration}\n')
-        fracs_pd.to_csv(file, index=False, mode='a')
-        return
+    file.write(f'##init_pop:{init_pop}#duration:{duration}\n')
+    fracs_pd.to_csv(file, index=False, mode='a')
 
-    return fracs_pd
-
-run_calc_frac(input('INPUT FILENAME '), 1000, 5, last_cyc_only=False)
+run_calc_frac(input('INPUT FILENAME '), 1000, 5, 0.5)
