@@ -89,3 +89,7 @@ def odes(x, t, alpha, lags, frid=False, rs=None): ##
         to_return.append(locals()[f'dSg{j}dt'])
 
     return to_return
+
+# import numpy as np
+# x = np.array([2780, 2780, 2780, 662.425255108161, 0, 337.57474489183915, 0])
+# print(odes(x, 0, (3, 3), [[1], [1]], rs=0.5))

@@ -34,20 +34,28 @@ def run_calc_frac(filename, init_pop, duration, last_cyc_only=False, file_write=
         cycle = set_cycle
         while cycle < cycles:
             curr_cycle = curr_rep.loc[curr_rep['cycle'] == cycle]
+            nE = len(curr_cycle.loc[curr_cycle['species'] == 'Escherichia coli'].index)
+            nS = len(curr_cycle.index) - nE
 
-            n_set = (curr_cycle['ntot'] / sum(curr_cycle['ntot'])) * init_pop # for each genotype
+            n_E = curr_cycle.loc[curr_cycle['species'] == 'Escherichia coli']['ntot'] / sum(curr_cycle['ntot'])
+            n_set_E = n_E * init_pop
 
-            E_frac = sum(curr_cycle.loc[curr_cycle['species'] == 'Escherichia coli']['ntot'])  / sum(curr_cycle['ntot'])
+            E_frac = sum(n_E)
             init_pop_E = init_pop * E_frac
 
             init_cond = [2780, 2780, 2780]
-            init_cond += list(chain.from_iterable(zip(n_set, repeat(0, len(curr_cycle))))) # alternate n(lag) and 0 for init_cond
+            init_cond.extend(list(repeat(0, nE)))
+            init_cond.extend(list(n_set_E))
 
-            if culture == "mono":
+            if nS == 0:
                 lags = [tuple(curr_cycle.loc[curr_cycle['species'] == 'Escherichia coli']['lag'])]
-            elif culture == "co":
+            elif nS > 0:
                 lags = [tuple(curr_cycle.loc[curr_cycle['species'] == 'Escherichia coli']['lag']),
                         tuple(curr_cycle.loc[curr_cycle['species'] == 'Salmonella enterica']['lag'])]
+                n_set_S = curr_cycle.loc[curr_cycle['species'] == 'Salmonella enterica']['ntot'] / sum(curr_cycle['ntot']) * init_pop
+                init_cond.extend(list(repeat(0, nS)))
+                init_cond.extend(list(n_set_S))
+
 
             frac = calc_frac(init_cond, duration, lags, init_pop_E)
             fracs.append((culture, rep, cycle, frac, duration))
@@ -67,4 +75,5 @@ def run_calc_frac(filename, init_pop, duration, last_cyc_only=False, file_write=
 
     return fracs_pd
 
-run_calc_frac(input('INPUT FILENAME '), 1000, 5, last_cyc_only=False)
+x = run_calc_frac('hcb_sim_co_166_met1_phase015.csv', 1000, 5, last_cyc_only=True)
+# pdb.set_trace()

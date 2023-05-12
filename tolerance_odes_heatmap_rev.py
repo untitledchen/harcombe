@@ -2,7 +2,6 @@
 # x is a numpy array
 # split x into resources as variables and populations g and l, as numpy arrays
 import pdb
-
 import numpy as np
 
 def odes(x, t, alpha, lags, frid=False):
@@ -91,5 +90,5 @@ def odes(x, t, alpha, lags, frid=False):
 
     return to_return
 
-x = [1000, 1000, 0, 5, 0, 5, 0]
-print(odes(x, 0, (3, 3), [[1], 1]))
+# x = np.array([2780, 2780, 2780, 0, 662.425255108161, 0, 337.57474489183915])
+# print(odes(x, 0, (3, 3), [[1], [1]]))
