@@ -3,7 +3,7 @@ import pandas as pd
 import time
 
 for i in range(3):
-    data = pd.read_csv('hcb_sim_co_166_met1_phase00.csv', header=1, na_filter=False)
+    data = pd.read_csv('phase0/hcb_sim_co_166_met1_phase00.csv', header=1, na_filter=False)
 
     begin = time.perf_counter()
     b = len(data.loc[data['species'] == 'Escherichia coli'].index)

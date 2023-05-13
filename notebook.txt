@@ -25,6 +25,8 @@ hcb_sim_heatmap_rev.py
 hcb_sim_heatmap_rev.py
 * need to fix growing lagging
 
-for next time:
-need to find out what about tolerance_odes is wrong in calc_frac
-Els is a list
+5/12/23
+calc_frac
+*fixed order of init_cond to [Egs, Els, Sgs, Sls]
+
+5/13/23
