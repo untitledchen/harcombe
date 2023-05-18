@@ -17,10 +17,10 @@ import math
 # print('seed:', seed)
 
 # rounding function: rounds .5 up to next int
-def round_half_up(n, decimals=0):
-    multiplier = 10 ** decimals
-    rounded = math.floor(n * multiplier + 0.5) / multiplier
-    return int(rounded)
+# def round_half_up(n, decimals=0):
+#     multiplier = 10 ** decimals
+#     rounded = math.floor(n * multiplier + 0.5) / multiplier
+#     return int(rounded)
 
 # null_function grabs MIC mutations from a uniform distribution
 def make_null_function(max_lag_change):
@@ -87,7 +87,7 @@ def generate_mutants(flask, n, mu, mutation_function, cycle):
         n_freq = n_growing / sum
 
         # Adamowicz-based
-        chance_tf = np.random.rand(round_half_up(sum))
+        chance_tf = np.random.rand(int(sum))
         mutant_n = len(chance_tf[chance_tf < u])
 
         if mutant_n > 0:
@@ -224,7 +224,7 @@ def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_
 
 
 #run(166, "mono", 5, (0.0003, 0), 10, (1000, 1000, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0))
-#run(166, "co", 5, (0.0003, 0.0003), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
+run(random.randrange(1000), "co", 10, (0.01, 0.01), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
 
 # begin_tot = time.perf_counter()  #
 #run(499, "mono", 10, (0.0005, 0), 10, (1000, 1000, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0), 0.5)
