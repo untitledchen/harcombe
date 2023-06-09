@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import odeint
-from tolerance_odes_heatmap_rev import odes
+from tolerance_odes import odes
 
 import random
 import copy
@@ -223,10 +223,8 @@ def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_
     #print("Finished")
 
 
-#run(166, "mono", 5, (0.0003, 0), 10, (1000, 1000, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0))
-#run(random.randrange(1000), "co", 10, (0.01, 0.01), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
+# seed = random.randrange(1000)
+# print("running")
+# run(seed, "mono", 10, (0.0003, 0), 10, (1000, 1000, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0))
+# run(seed, "co", 10, (0.0003, 0.0003), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
 
-# begin_tot = time.perf_counter()  #
-#run(499, "mono", 10, (0.0005, 0), 10, (1000, 1000, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0), 0.5)
-# print(f"{time.perf_counter() - begin_tot}")  #
-#run(499, "co", 5, (0.0003, 0.0003), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1), 0.5)

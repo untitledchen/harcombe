@@ -1,0 +1,12 @@
+The output of calculating tolerance (time for E. coli population to reach 1% of its original) tested with:
+
+10k-ttimes-Ecoli_init_pop1000_perc_cutoff0.01_interval0.01_co_seed687_rep5_mu(0.0002, 0.0002)_cycles10_init_R(1, 1000, 0)_init_n(5, 5)_init_lag(1, 1)_Ta5_alpha(3, 3)_null(1.1, 1.1)-post.csv
+- starting resources of methionine and lactose at 10000
+
+2780new-times-Ecoli_init_pop1000_perc_cutoff0.01_interval0.01_co_seed687_rep5_mu(0.0002, 0.0002)_cycles10_init_R(1, 1000, 0)_init_n(5, 5)_init_lag(1, 1)_Ta5_alpha(3, 3)_null(1.1, 1.1)-post.csv
+- starting resources of methionine and lactose at 2780
+
+No noticeable difference.
+
+CONCLUSION
+Will use 2780 met, lac for calc_tolerance.py.

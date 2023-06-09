@@ -75,7 +75,7 @@ def run_calc_frac(filename, init_pop, duration, last_cyc_only=False, file_write=
 
     return fracs_pd
 
-#run_calc_frac(input(), 1000, 5)
+#run_calc_frac(input("enter"), 1000, 5)
 
 #x = run_calc_frac('phase0/hcb_sim_co_166_met1_phase015.csv', 1000, 5, last_cyc_only=True)
 # pdb.set_trace()

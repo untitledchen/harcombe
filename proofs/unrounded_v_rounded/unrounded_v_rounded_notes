@@ -1,0 +1,10 @@
+mono_seed166_rep5_mu(0.0002, 0.0002)_cycles10_init_R(1000, 1000, 0)_init_n(10, 0)_init_lag(1, 1)_Ta5_alpha(3, 3)_null(1.1, 1.1)-post.csv
+- round() in odes file dEldts
+mono_seed166_rep5_mu(0.0002, 0.0002)_cycles10_init_R(1000, 1000, 0)_init_n(10, 0)_init_lag(1, 1)_Ta5_alpha(3, 3)_null(1.1, 1.1)-postur.csv
+- no round()
+
+Unrounded allows for negative counts in El after phase 2. Unrounded is significantly faster.
+In the final output, while phase 2 counts differ, phase 1 counts are essentially identical.
+
+CONCLUSION
+Unrounded is preferred.
