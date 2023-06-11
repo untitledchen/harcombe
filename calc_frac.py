@@ -67,7 +67,13 @@ def run_calc_frac(filename, init_pop, duration, last_cyc_only=False, file_write=
     if file_write:
         with open(filename, 'r') as file:
             first_line = file.readline()
-        file = open(f'frac_{filename}', 'w')
+
+        #
+        split_filename = filename.split("\\")
+        split_filename[5] = "frac_" + split_filename[5]
+        filename = "\\".join(split_filename)
+
+        file = open(f'{filename}', 'w') #
         file.write(first_line)
         file.write(f'##init_pop:{init_pop}#duration:{duration}\n')
         fracs_pd.to_csv(file, index=False, mode='a')

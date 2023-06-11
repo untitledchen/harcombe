@@ -8,11 +8,12 @@ from hcb_sim import run
 from calc_frac import run_calc_frac
 
 import random
-#
+
+
 # seed = random.randrange(1000)
 # #
 # lst = [('culture', 'met', 'rep', 'frac_slope')]
-# mets = list(range(0, 20, 1))
+# mets = list(range(20, 40, 1))
 # for met in mets:
 #     run(seed, "mono", 10, (0.01, 0), 10, (met, 1000, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0))
 #     #run(seed, "co", 5, (0.01, 0.01), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
@@ -31,7 +32,9 @@ import random
 #         slope_mono, intercept, r_value, p_value, std_err = linregress(data1_rep['cycle'], data1_rep[f'log10_{yvar}'])
 #         lst.append(('Monoculture', met, rep, slope_mono))
 #
+# file = open(f'frac_slopes.csv', 'a')  # write custom text to front
 # final_pd = pd.DataFrame(lst[1:], columns=list(lst[0]))
+# final_pd.to_csv('frac_slopes.csv', header=True, index=False, mode="a")
 # final_pd.to_csv(f'frac_slopes.csv', index=False)
 
 
@@ -106,11 +109,10 @@ import random
 # data2 = pd.read_csv("frac_hcb_sim_mono_331_met1000.csv", header=2)
 # data = pd.concat((data1, data2), axis=0, ignore_index=True)
 
-data = pd.read_csv("frac_slopes.csv")
-# # sns.relplot(data=data, x="cycle", y="frac", hue="culture", kind="line", ci="sd", err_style="bars", alpha=0.65, palette="husl")
-sns.relplot(data=data, x="met", y="frac_slope", hue="culture", kind="line", ci="sd", err_style="bars", alpha=0.65, palette="husl")
-# # # x.set(xlabel="Phase 0 Duration", ylabel="Slope of Lin. Reg. Line of Log10(Survival Fraction) by Rep", title="Impact of Pre-Exposure Growth on Monoculture Survival Fraction Evolution")
-# # # plt.subplots_adjust(top=0.95) # use a lower number to make more vertical space
+data = pd.read_csv("survfrac_over_monomet/frac_slopes_0_40_1.csv")
+x = sns.relplot(data=data, x="met", y="frac_slope", hue="culture", kind="line", ci="sd", err_style="bars", alpha=0.65, palette="husl")
+x.set(xlabel="Initial Methionine", ylabel="Slope of Lin. Reg. Line of Log10(Survival Fraction) by Rep", title="Impact of Initial Methionine on Monoculture Survival Fraction Evolution")
+plt.subplots_adjust(top=0.95) # use a lower number to make more vertical space
 plt.show()
 
 

@@ -29,4 +29,6 @@ hcb_sim_heatmap_rev.py
 calc_frac
 *fixed order of init_cond to [Egs, Els, Sgs, Sls]
 
-5/13/23
+6/11/23
+made heatplots w met and lac [0, 1, 5, 10, 15, 20]
+*add more data points as there appears to maybe be a lightening trend toward higher values

@@ -185,7 +185,7 @@ def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_
     globals()['seed'] = seed ##
 
     #file = open(f'hcb_sim_{culture}_{seed}_met{init_R[0]}_lac{init_R[1]}.csv', 'w') # write custom text to front
-    file = open(f'hcb_sim_{culture}_{seed}_met{init_R[0]}.csv', 'w')  # write custom text to front
+    file = open(f'C:\\Users\\untit\\harcombe\\data_hold\\hcb_sim_{culture}_{seed}_met{init_R[0]}_lac{init_R[1]}.csv', 'w')  # write custom text to front
     file.write(f'##culture:{culture}#seed:{seed}#rep:{reps}#mu:{mu}#cycles:{cycles}#init_R:{init_R}#init_n:{init_n}#init_lag:{init_lag}#Ta:{Ta}#alpha:{alpha}#mut_func:{mutation_func_type}#max_lag_change:{max_lag_change}\n')
 
     # make mutation function
