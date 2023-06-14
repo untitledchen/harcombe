@@ -36,3 +36,7 @@ made heatplots w met and lac [0, 1, 5, 10, 15, 20]
 6/12/23
 expanded 6/11/23 heatmap to 0-40 for met & lac; no observable change in trend.
 *graph frac rate over lac for co-culture, and then mono-culture
+
+6/13/23
+lac paired with met:1 appears to have no effect on co-culture above ~200.
+Re-tried mono:80, 2780, 0 and co:1, 2780, 0 to find that difference is now not significant. Init. nutrient has little effect on outcome.

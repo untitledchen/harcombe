@@ -73,4 +73,4 @@ def run_calc_tol(filename, init_pop, perc_cutoff, interval, rs): ##
     times_pd.to_csv(file, index=False, mode='a')
     #times_pd.to_csv(f'times_init_pop{init_pop}_perc_cutoff{perc_cutoff}_interval{interval}_{filename}', index=False)
 
-run_calc_tol(input('input'), 1000, 0.01, 0.1, 0.5)
+# run_calc_tol(input('input'), 1000, 0.01, 0.1, 0.5)
