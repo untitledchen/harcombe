@@ -40,3 +40,19 @@ expanded 6/11/23 heatmap to 0-40 for met & lac; no observable change in trend.
 6/13/23
 lac paired with met:1 appears to have no effect on co-culture above ~200.
 Re-tried mono:80, 2780, 0 and co:1, 2780, 0 to find that difference is now not significant. Init. nutrient has little effect on outcome.
+
+6/15/23
+Started E.coli S.enterica frequency graph over cycle.
+*Figure out groupby to sns.hisplot pipeline
+
+6/22/23
+Stopped pandas from putting a space between lines in hcb_sim
+*Observe effect of changing old hcb_sim to postmutate to see if significant distance between co and mono
+at 1, 2780 persists.
+
+6/23/23
+Previous significants with co: 1 2780 0 and mon: 80 2780 0 are due to lack of mutation, giving mono a terribly small number.
+Was fixed by postmutating and bringing mutation rate to 0.001 for speed.
+Graphed impact of lactose on survival fraction rate of mono and co.
+*mutate at halfway
+*costag - how to import from other folder "."?

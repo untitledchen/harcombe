@@ -78,7 +78,7 @@ def generate_mutants(flask, n, mu, mutation_function, cycle):
 
     n_mut_grow = [[], []]
     n_mut_lag = [[], []]
-    for s, species in enumerate(flask):
+    for s, species in enumerate([flask[0]]):
         # pdb.set_trace()
         n_growing = n[s*(2*nE):(nE, 2*nE + nS)[s]] # pick sol growing
 

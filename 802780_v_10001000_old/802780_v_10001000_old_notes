@@ -1,0 +1,5 @@
+hcb_sim_old recovered from February 22, 2023
+significance between co: 1 2780 0 and mono: 80 2780 0 and co: 1 1000 0 and mono: 1000 1000 0.
+
+hcb_sim_postmut fixes append issue in generate_mutants and places mutation after phase 2, allowing monoculture to experience much more mutation with the same mutation rate (0.001 for speed).
+no significance between co: 1 2780 0 and mono: 80 2780 0 and co: 1 1000 0 and mono: 1000 1000 0.
