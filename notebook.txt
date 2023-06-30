@@ -55,4 +55,3 @@ Previous significants with co: 1 2780 0 and mon: 80 2780 0 are due to lack of mu
 Was fixed by postmutating and bringing mutation rate to 0.001 for speed.
 Graphed impact of lactose on survival fraction rate of mono and co.
 *mutate at halfway
-*costag - how to import from other folder "."?

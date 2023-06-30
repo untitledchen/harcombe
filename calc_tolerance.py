@@ -25,15 +25,15 @@ def calc_tolerance(init_cond_now, interval, lags, cutoff):
 
     return iter * interval
 
-def run_calc_tol(filename, init_pop, perc_cutoff, interval, rs): ##
-    globals()['rs'] = rs ##
+def run_calc_tol(filepath, init_pop, perc_cutoff, interval): ##
+    with open(filepath, 'r') as f:
+        first_line = f.readline()
 
-    with open(filename, 'r') as file:
-        first_line = file.readline()
+    filename = filepath.split("\\")[-1]
     file = open(f'tol_{filename}', 'w')
     file.write(first_line)
 
-    data = pd.read_csv(filename, header=1, na_filter=False)
+    data = pd.read_csv(filepath, header=1, na_filter=False)
 
     culture = data['culture'][0]
     #culture = filename.split('_')[1]
@@ -71,6 +71,5 @@ def run_calc_tol(filename, init_pop, perc_cutoff, interval, rs): ##
 
     file.write(f'##init_pop:{init_pop}#perc_cutoff:{perc_cutoff}#interval:{interval}\n')
     times_pd.to_csv(file, index=False, mode='a')
-    #times_pd.to_csv(f'times_init_pop{init_pop}_perc_cutoff{perc_cutoff}_interval{interval}_{filename}', index=False)
 
 # run_calc_tol(input('input'), 1000, 0.01, 0.1, 0.5)

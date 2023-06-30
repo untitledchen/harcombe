@@ -13,8 +13,8 @@ def calc_frac(init_cond, duration, lags, init_pop_E):
     frac = sum(cells) / init_pop_E
     return frac
 
-def run_calc_frac(filename, init_pop, duration, last_cyc_only=False, file_write=True):
-    data = pd.read_csv(filename, header=1, na_filter=False)
+def run_calc_frac(filepath, init_pop, duration, last_cyc_only=False, file_write=True):
+    data = pd.read_csv(filepath, header=1, na_filter=False)
 
     culture = data['culture'][0]
 
@@ -65,15 +65,13 @@ def run_calc_frac(filename, init_pop, duration, last_cyc_only=False, file_write=
     fracs_pd = pd.DataFrame(fracs[1:], columns=list(fracs[0]))
 
     if file_write:
-        with open(filename, 'r') as file:
-            first_line = file.readline()
+        with open(filepath, 'r') as f:
+            first_line = f.readline()
 
         #
-        split_filename = filename.split("\\")
-        split_filename[5] = "frac_" + split_filename[5]
-        filename = "\\".join(split_filename)
+        filename = filepath.split("\\")[-1]
 
-        file = open(f'{filename}', 'w') #
+        file = open(f'frac_{filename}', 'w') #
         file.write(first_line)
         file.write(f'##init_pop:{init_pop}#duration:{duration}\n')
         fracs_pd.to_csv(file, index=False, mode='a')

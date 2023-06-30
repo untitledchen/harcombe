@@ -109,7 +109,7 @@ import random
 # data2 = pd.read_csv("frac_hcb_sim_mono_331_met1000.csv", header=2)
 # data = pd.concat((data1, data2), axis=0, ignore_index=True)
 
-data = pd.read_csv("survfrac_over_monomet/frac_slopes_0_40_1.csv")
+data = pd.read_csv("results_29062023/survfrac_over_monomet/frac_slopes_0_40_1.csv")
 x = sns.relplot(data=data, x="met", y="frac_slope", hue="culture", kind="line", ci="sd", err_style="bars", alpha=0.65, palette="husl")
 x.set(xlabel="Initial Methionine", ylabel="Slope of Lin. Reg. Line of Log10(Survival Fraction) by Rep", title="Impact of Initial Methionine on Monoculture Survival Fraction Evolution")
 plt.subplots_adjust(top=0.95) # use a lower number to make more vertical space

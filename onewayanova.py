@@ -4,34 +4,37 @@ import numpy as np
 import pandas as pd
 from scipy.stats import f_oneway, linregress
 
-data1 = pd.read_csv(input("INPUT MONO "), header=2, na_filter=False)
-data2 = pd.read_csv(input("INPUT CO "), header=2, na_filter=False)
-yvar = input("INPUT YVAR ")
+def run_OWA(file1, file2, yvar):
+    data1 = pd.read_csv(file1, header=2, na_filter=False)
+    data2 = pd.read_csv(file2, header=2, na_filter=False)
 
-# tol_times1 = list(data1['tol_time'])
-# tol_times2 = list(data2['tol_time'])
-###
-reps1 = max(data1['rep']) + 1
-cycles1 = max(data1['cycle']) + 1
-data1[f'log10_{yvar}'] = np.log10(data1[yvar])
-best_fit_by_rep1 = []
-for rep in range(reps1):
-    slope, intercept, r_value, p_value, std_err = linregress(data1.loc[data1['rep'] == rep]['cycle'], data1.loc[data1['rep'] == rep][f'log10_{yvar}'])
-    best_fit_by_rep1.append(slope)
-reps2 = max(data2['rep']) + 1
-cycles2 = max(data2['cycle']) + 1
-data2[f'log10_{yvar}'] = np.log10(data2[yvar])
-best_fit_by_rep2 = []
-for rep in range(reps2):
-    slope, intercept, r_value, p_value, std_err = linregress(data2.loc[data1['rep'] == rep]['cycle'], data2.loc[data1['rep'] == rep][f'log10_{yvar}'])
-    best_fit_by_rep2.append(slope)
+    # tol_times1 = list(data1['tol_time'])
+    # tol_times2 = list(data2['tol_time'])
+    ###
+    reps1 = max(data1['rep']) + 1
+    cycles1 = max(data1['cycle']) + 1
+    data1[f'log10_{yvar}'] = np.log10(data1[yvar])
+    best_fit_by_rep1 = []
+    for rep in range(reps1):
+        slope, intercept, r_value, p_value, std_err = linregress(data1.loc[data1['rep'] == rep]['cycle'], data1.loc[data1['rep'] == rep][f'log10_{yvar}'])
+        best_fit_by_rep1.append(slope)
+    reps2 = max(data2['rep']) + 1
+    cycles2 = max(data2['cycle']) + 1
+    data2[f'log10_{yvar}'] = np.log10(data2[yvar])
+    best_fit_by_rep2 = []
+    for rep in range(reps2):
+        slope, intercept, r_value, p_value, std_err = linregress(data2.loc[data1['rep'] == rep]['cycle'], data2.loc[data1['rep'] == rep][f'log10_{yvar}'])
+        best_fit_by_rep2.append(slope)
 
-slopemono, intercept, r_value, p_value, std_err = linregress(data1['cycle'], data1[f'log10_{yvar}'])
-slopeco, intercept, r_value, p_value, std_err = linregress(data2['cycle'], data2[f'log10_{yvar}'])
-print("slope mono: ", slopemono)
-print("slope co: ", slopeco)
+    slope1, intercept, r_value, p_value, std_err = linregress(data1['cycle'], data1[f'log10_{yvar}'])
+    slope2, intercept, r_value, p_value, std_err = linregress(data2['cycle'], data2[f'log10_{yvar}'])
 
-print(f_oneway(best_fit_by_rep1, best_fit_by_rep2))
+    with open(f'{file1}_{file2}_{yvar}_OWA.txt', "w") as f:
+        f.write(f'slope 1: {slope1}\n')
+        f.write(f'slope 2: {slope2}\n')
+
+        result = f_oneway(best_fit_by_rep1, best_fit_by_rep2)
+        f.write(f'{str(result)}\n')
 
 # avg_tol_times_by_cycle1 = []
 # for curr_cyc in range(cycles1):

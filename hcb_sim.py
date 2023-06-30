@@ -184,10 +184,10 @@ def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow,
 def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_grow, mutation_func_type, max_lag_change):
     globals()['seed'] = seed ##
 
-    #file = open(f'hcb_sim_{culture}_{seed}_met{init_R[0]}_lac{init_R[1]}.csv', 'w') # write custom text to front
     file = open(f'C:\\Users\\untit\\harcombe\\data_hold\\hcb_sim_{culture}_{seed}_met{init_R[0]}_lac{init_R[1]}.csv', 'w', newline="\n")  # write custom text to front
     file.write(f'##culture:{culture}#seed:{seed}#rep:{reps}#mu:{mu}#cycles:{cycles}#init_R:{init_R}#init_n:{init_n}#init_lag:{init_lag}#Ta:{Ta}#alpha:{alpha}#mut_func:{mutation_func_type}#max_lag_change:{max_lag_change}\n')
 
+    print("Running") #
     # make mutation function
     if mutation_func_type == "null":
         mutation_func = make_null_function(max_lag_change)
@@ -216,9 +216,7 @@ def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_
                 final.append(row)
 
     final_pd = pd.DataFrame(final[1:], columns=list(final[0]))
-    #with open(f'hcb_sim_{culture}_{seed}.csv', 'a') as file: # write custom text to front
     final_pd.to_csv(file, header=True, index=False, mode="a")
-    #final_pd.to_csv(f'{culture}_seed{seed}_rep{reps}_mu{mu}_cycles{cycles}_init_R{init_R}_init_n{init_n}_init_lag{init_lag}_Ta{Ta}_alpha{alpha}_{mutation_func_type}{max_lag_change}.csv', index=False)
 
     #print("Finished")
 
