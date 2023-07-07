@@ -55,3 +55,10 @@ Previous significants with co: 1 2780 0 and mon: 80 2780 0 are due to lack of mu
 Was fixed by postmutating and bringing mutation rate to 0.001 for speed.
 Graphed impact of lactose on survival fraction rate of mono and co.
 *mutate at halfway
+
+7/5/2023
+5hr_frac_slope_over_lac
+
+7/6/23
+5hrfrac_slope_over_met
+* fix graph and compile to allow for single error-bar-less co line plotted on same axes
