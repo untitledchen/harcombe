@@ -2,7 +2,6 @@ import pandas as pd
 from hcb_sim import run_phase
 from itertools import chain, repeat
 
-import pdb#
 
 def calc_tolerance(init_cond_now, interval, lags, cutoff):
     nE = len(lags[0])  #

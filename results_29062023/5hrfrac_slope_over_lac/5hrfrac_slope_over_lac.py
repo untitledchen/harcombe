@@ -1,28 +1,24 @@
 import random
-
 import sys
 sys.path.insert(0, "C:\\Users\\untit\\harcombe")
 
-from onewayanova import run_OWA
-
-seed = 763 #random.randrange(1000)
+seed = random.randrange(1000)
 
 lacs = [1, 5, 10, 20, 50, 100, 125, 150, 175, 200, 250, 300, 250, 400, 500, 750, 1000, 1250, 1500, 1750, 2000]
-# lacs = [1250, 1500, 1750]
 def generate_new():
     from hcb_sim import run
 
     for lac in lacs:
-        # run(seed, "mono", 10, (0.01, 0), 10, (1000, lac, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0))
-        run(seed, "co", 10, (0.01, 0.01), 10, (1, lac, 0), (5, 5), (1, 10), 5, (3, 3), 42, "null", (1.1, 1.1))
+        run(seed, "mono", 10, (0.01, 0), 10, (1000, lac, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0))
+        run(seed, "co", 10, (0.01, 0.01), 10, (1, lac, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
 
     return
 
 def calc_new():
     from calc_frac import run_calc_frac
     for lac in lacs:
-        run_calc_frac(f'C:\\Users\\untit\\harcombe\\results_29062023\\5hrfrac_slope_over_lac\\hcb_sim_{"mono"}_{seed}_met{1000}_lac{lac}.csv', 1000, 5)
-        run_calc_frac(f'C:\\Users\\untit\\harcombe\\results_29062023\\5hrfrac_slope_over_lac\\hcb_sim_{"co"}_{seed}_met{1}_lac{lac}.csv', 1000, 5)
+        run_calc_frac(f'C:\\Users\\untit\\harcombe\\data_hold\\hcb_sim_{"mono"}_{seed}_met{1000}_lac{lac}.csv', 1000, 5)
+        run_calc_frac(f'C:\\Users\\untit\\harcombe\\data_hold\\hcb_sim_{"co"}_{seed}_met{1}_lac{lac}.csv', 1000, 5)
 
     return
 
@@ -70,7 +66,7 @@ def graph():
 
     return
 
-# generate_new()
-# calc_new()
-# compile_slopes("frac")
+generate_new()
+calc_new()
+compile_slopes("frac")
 graph()

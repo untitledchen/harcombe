@@ -25,7 +25,7 @@ import math
 # null_function grabs MIC mutations from a uniform distribution
 def make_null_function(max_lag_change):
     def null_function(s):
-        lag_change = random.uniform(0,1) * max_lag_change[s]
+        lag_change = random.uniform(-1,1) * max_lag_change[s]
         return lag_change
     return null_function
             
@@ -102,8 +102,8 @@ def generate_mutants(flask, n, mu, mutation_function, cycle):
                 n_mut_lag[s].append(0)
                 # n = np.insert(n, (nE, 2*nE + nS)[s], 1)
                 # n = np.insert(n, 2*nE + s*(2*nS) + j + 1, 0) # insert after latest lagging
-                flask[s].add_genotype(Genotype(f"{('E', 'S')[s]}{genotype_ct + j}c{cycle}", n=1, lag=max([0, ancestor.lag + mutation_function(s)]),
-                                               ancestors=ancestor.name + ' ' + ancestor.ancestors))
+                flask[s].add_genotype(Genotype(f"{('E', 'S')[s]}{genotype_ct + j}c{cycle}", n=1, lag=max([1, ancestor.lag + mutation_function(s)]),
+                                               ancestors=ancestor.name + ' ' + ancestor.ancestors)) #min 1
 
     return n_mut_grow, n_mut_lag
 
@@ -224,5 +224,5 @@ def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_
 # seed = random.randrange(1000)
 # print("running")
 # run(seed, "mono", 10, (0.0003, 0), 10, (1000, 1000, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0))
-# run(seed, "co", 10, (0.0003, 0.0003), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
+# run(10, "co", 10, (0.01, 0.01), 10, (0, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
 

@@ -1,14 +1,6 @@
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
-import numpy as np
-from scipy.stats import linregress
-
-from hcb_sim import run
-from calc_frac import run_calc_frac
-
-import random
-
 
 # seed = random.randrange(1000)
 # #

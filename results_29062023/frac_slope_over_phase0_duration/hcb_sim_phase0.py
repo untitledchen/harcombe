@@ -25,7 +25,7 @@ def round_half_up(n, decimals=0):
 # null_function grabs MIC mutations from a uniform distribution
 def make_null_function(max_lag_change):
     def null_function(s):
-        lag_change = random.uniform(0,1) * max_lag_change[s]
+        lag_change = random.uniform(-1,1) * max_lag_change[s]
         return lag_change
     return null_function
             
@@ -102,7 +102,7 @@ def generate_mutants(flask, n, mu, mutation_function, cycle):
                 n_mut_lag[s].append(0)
                 # n = np.insert(n, (nE, 2*nE + nS)[s], 1)
                 # n = np.insert(n, 2*nE + s*(2*nS) + j + 1, 0) # insert after latest lagging
-                flask[s].add_genotype(Genotype(f"{('E', 'S')[s]}{genotype_ct + j}c{cycle}", n=1, lag=max([0, ancestor.lag + mutation_function(s)]),
+                flask[s].add_genotype(Genotype(f"{('E', 'S')[s]}{genotype_ct + j}c{cycle}", n=1, lag=max([1, ancestor.lag + mutation_function(s)]),
                                                ancestors=ancestor.name + ' ' + ancestor.ancestors))
 
     return n_mut_grow, n_mut_lag

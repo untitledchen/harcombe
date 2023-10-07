@@ -62,3 +62,6 @@ Graphed impact of lactose on survival fraction rate of mono and co.
 7/6/23
 5hrfrac_slope_over_met
 * fix graph and compile to allow for single error-bar-less co line plotted on same axes
+
+10/7/23
+Redoing graphs after fixing hcb_sim (and hcb_sim_phase0) to have both pos and neg mutations, though lag time never goes below 1.

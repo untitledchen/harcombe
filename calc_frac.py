@@ -1,8 +1,6 @@
 import pandas as pd
 from hcb_sim import run_phase
-from itertools import chain, repeat
-
-import pdb
+from itertools import repeat
 
 
 def calc_frac(init_cond, duration, lags, init_pop_E):
