@@ -25,7 +25,7 @@ def round_half_up(n, decimals=0):
 # null_function grabs MIC mutations from a uniform distribution
 def make_null_function(max_lag_change):
     def null_function(s):
-        lag_change = random.uniform(-1,1) * max_lag_change[s]
+        lag_change = random.uniform(-1, 1) * max_lag_change[s]
         return lag_change
     return null_function
             
@@ -79,7 +79,6 @@ def generate_mutants(flask, n, mu, mutation_function, cycle):
     n_mut_grow = [[], []]
     n_mut_lag = [[], []]
     for s, species in enumerate(flask):
-        # pdb.set_trace()
         n_growing = n[s*(2*nE):(nE, 2*nE + nS)[s]] # pick sol growing
 
         u = mu[s]
@@ -128,10 +127,18 @@ def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow,
     sol = run_phase(alpha, init_cond, lags1, x, 2)
     init_cond = sol[-1] / 2
     init_cond[0:3] = init_cond[0:3] + init_R
-    ##print(init_cond)
+
+    # make all cells lag before phase 1
+    nE = len(lags1[0])
+    init_cond[(nE + 3):(2 * nE + 3)] += init_cond[3:(nE + 3)] # add growing population to lagging for E
+    init_cond[3:(nE + 3)] = 0 # set all growing to 0
+    if len(lags1) > 1:
+        nS = len(lags1[1])
+        init_cond[(nS + 2 * nE + 3):] += init_cond[(2 * nE + 3):(nS + 2 * nE + 3)]  # repeat for S enterica
+        init_cond[(2 * nE + 3):(nS + 2 * nE + 3)] = 0
 
     # phase 1
-    sol = run_phase(alpha, init_cond, lags1, Ta, 1) ##
+    sol = run_phase(alpha, init_cond, lags1, Ta, 1)
 
     # collect 1
     sol1 = sol[-1]
@@ -166,7 +173,6 @@ def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow,
     for s, species in enumerate(flask):
         N = [n[0:2*nE], n[2*nE:]][s]
         half = (int)(len(N) / 2)
-        # pdb.set_trace()
 
         N_growing = list(N[:half])
         N_growing.extend(n_mut_grow[s])
@@ -176,7 +182,6 @@ def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow,
         N_tot = np.array(N_growing) + np.array(N_lagging)
 
         for i, ct in enumerate(N_tot):
-            #pdb.set_trace()
             genotype = species.genotypes[i]     ## Ntot more than flask
             genotype.n = ct / 2
 
@@ -188,20 +193,17 @@ def run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow,
 
 # simulation
 def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_grow, mutation_func_type, max_lag_change, x):
-    globals()['seed'] = seed ##
+    globals()['seed'] = seed
 
-    #file = open(f'hcb_sim_{culture}_{seed}_met{init_R[0]}_lac{init_R[1]}.csv', 'w') # write custom text to front
-    file = open(f'hcb_sim_{culture}_{seed}_met{init_R[0]}_phase0{x}.csv', 'w')  # write custom text to front
+    file = open(f'hcb_sim_{culture}_{seed}_met{init_R[0]}_phase0{x}_btl.csv', 'w')  # write custom text to front
     file.write(f'##culture:{culture}#seed:{seed}#rep:{reps}#mu:{mu}#cycles:{cycles}#init_R:{init_R}#init_n:{init_n}#init_lag:{init_lag}#Ta:{Ta}#alpha:{alpha}#mut_func:{mutation_func_type}#max_lag_change:{max_lag_change}\n')
 
     # make mutation function
     if mutation_func_type == "null":
         mutation_func = make_null_function(max_lag_change)
 
-    #print(f"Culture type: {culture}")#
     final = [('culture', 'rep', 'cycle', 'phase_end', 'species', 'genotype', 'ngrow', 'nlag', 'lag', 'M', 'L', 'A')]
     for rep in range(reps):
-        #print(f"Rep {rep}")#
         # set up first species
         flask = Flask()
         flask.add_species(Species('Escherichia coli', mu[0]))
@@ -216,27 +218,14 @@ def run(seed, culture, reps, mu, cycles, init_R, init_n, init_lag, Ta, alpha, t_
         inher_R = (0, 0, 0)
         # run simulation
         for cycle in range(cycles):
-            #print(f"Cycle {cycle}")#
             final_sub, inher_R = run_one_simulation(seed, culture, flask, init_R, inher_R, Ta, alpha, t_grow, rep, cycle, mutation_func, x)
             for row in final_sub:
                 final.append(row)
 
     final_pd = pd.DataFrame(final[1:], columns=list(final[0]))
-    #with open(f'hcb_sim_{culture}_{seed}.csv', 'a') as file: # write custom text to front
     final_pd.to_csv(file, header=True, index=False, mode="a")
-    #final_pd.to_csv(f'{culture}_seed{seed}_rep{reps}_mu{mu}_cycles{cycles}_init_R{init_R}_init_n{init_n}_init_lag{init_lag}_Ta{Ta}_alpha{alpha}_{mutation_func_type}{max_lag_change}.csv', index=False)
 
-    #print("Finished")
+    return
 
 #run(seed, "co", 5, (0.0003, 0.0003), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1))
 #run(166, "mono", 5, (0.0003, 0), 10, (1000, 1000, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0))
-
-# for x in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]:
-#     run(166, "mono", 10, (0.0003, 0), 10, (1000, 1000, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0), x)
-#     run(166, "co", 10, (0.0003, 0.0003), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1), x)
-#     print(x)
-
-# begin_tot = time.perf_counter()  #
-#run(499, "mono", 10, (0.0005, 0), 10, (1000, 1000, 0), (10, 0), (1, 0), 5, (3, 0), 42, "null", (1.1, 0), 0.5)
-# print(f"{time.perf_counter() - begin_tot}")  #
-#run(499, "co", 5, (0.0003, 0.0003), 10, (1, 1000, 0), (5, 5), (1, 1), 5, (3, 3), 42, "null", (1.1, 1.1), 0.5)

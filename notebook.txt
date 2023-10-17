@@ -65,3 +65,10 @@ Graphed impact of lactose on survival fraction rate of mono and co.
 
 10/7/23
 Redoing graphs after fixing hcb_sim (and hcb_sim_phase0) to have both pos and neg mutations, though lag time never goes below 1.
+
+10/15/23
+Generated phase0 w neg mutations.
+Generated phase0 w populations all going to lag between phase 0 and phase 1.
+
+10/16/23
+Regenerated phase0 graphs to have error bars.
