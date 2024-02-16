@@ -5,7 +5,7 @@ sys.path.insert(0, "C:\\Users\\untit\\harcombe")
 
 from onewayanova import run_OWA
 
-seed = random.randrange(1000)
+seed = 56 #random.randrange(1000)
 def generate_new():
     from hcb_sim import run
 
@@ -42,8 +42,8 @@ def graph():
 
     return
 
-generate_new()
-calc_new()
-analyze_OWA()
+# generate_new()
+# calc_new()
+# analyze_OWA()
 graph()
 

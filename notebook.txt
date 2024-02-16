@@ -72,3 +72,6 @@ Generated phase0 w populations all going to lag between phase 0 and phase 1.
 
 10/16/23
 Regenerated phase0 graphs to have error bars.
+
+1/14/23
+Started making graphs look more like Lauren's Figure 4.

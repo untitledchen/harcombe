@@ -1,0 +1,1 @@
+This hcb_sim uses a round function at the end of Phase 1 to simulate extinction.
