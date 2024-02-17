@@ -73,6 +73,7 @@ def graph():
     ax.set_ylabel("Tolerance (5-hour Survival Fraction)")
     ax.grid(linestyle="--", axis='y')
     ax.tick_params(direction='in')
+    ax.set_xlim([0, 22])
     ax.legend(loc='lower left')
 
     plt.show()
