@@ -2,11 +2,11 @@ import random
 import sys
 sys.path.insert(0, "C:\\Users\\untit\\harcombe")
 
-seed = random.randrange(1000)
+seed = 2 #random.randrange(1000)
 
-# mets = [1, 5, 10, 20, 50, 100, 125, 150, 175, 200, 250, 300, 250, 400, 500, 750, 1000, 1250, 1500, 1750, 2000]
-mets = list(range(1, 51, 1))
-
+mets = [1, 5, 10, 20, 50, 100, 125, 150, 175, 200, 250, 300, 250, 400, 500, 750, 1000, 1250, 1500, 1750, 2000]
+# mets = list(range(1, 51, 1))
+#
 def generate_new():
     from hcb_sim import run
 
@@ -66,21 +66,47 @@ def compile_slopes(yvar):
 
 def graph():
     import pandas as pd
-    import seaborn as sns
     import matplotlib.pyplot as plt
+    import numpy as np
+    import copy
 
-    data = pd.read_csv(f'frac_slopes_{seed}_met{mets[0]}to{mets[-1]}.csv')
-    # data = data.loc[data["met"] < 251]
+    data = pd.read_csv(f'frac_slopes_{seed}_met{mets[0]}to{mets[-1]}_edited.csv')
+    data1 = data.loc[data['culture'] == "Monoculture"]
+    data2 = data.loc[data['culture'] == "Coculture"]
+    data1_groupby_lac = data1.groupby(['met'])['frac_slope'].agg(["mean", "std"])
+    data2_groupby_lac = data2.groupby(['met'])['frac_slope'].agg(["mean", "std"])
 
-    x = sns.relplot(data=data, x="met", y="frac_slope", kind="line", hue="culture", ci="sd", err_style="bars",
-                    alpha=0.7, palette="husl", legend=False)
-    x.set(xlabel="Initial Methionine", ylabel="5-hour Survival Fraction Slope")
-    plt.legend(title='Culture Type', loc="lower right", labels=['Monoculture', 'Coculture'])
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+    ax.scatter(data1['met'], data1['frac_slope'], facecolor="#41A1F8", s=10, linewidths=1,
+               label="Monoculture")
+
+    ax.errorbar(data1_groupby_lac.index.to_numpy(), data1_groupby_lac["mean"].values,
+                yerr=data1_groupby_lac["std"].values, color="#41A1F8", linewidth=2, linestyle="--", ecolor="#054f94",
+                elinewidth=1, capsize=4)
+
+    offset = 50
+    ax.errorbar(data1_groupby_lac.index.to_numpy(), data2_groupby_lac["mean"].values, color="#80D554", linewidth=2, linestyle="--", label="Coculture")
+
+    ax.set_xlabel("Initial Methionine (cell equivalents/mL)")
+    ax.set_ylabel("Tolerance (5-hour Survival Fraction)")
+    ax.grid(linestyle="--", axis='y')
+    ax.tick_params(direction='in')
+    ax.legend(loc='lower right')
+
     plt.show()
+
+    # data = pd.read_csv(f'frac_slopes_{seed}_met{mets[0]}to{mets[-1]}.csv')
+    # # data = data.loc[data["met"] < 251]
+    #
+    # x = sns.relplot(data=data, x="met", y="frac_slope", kind="line", hue="culture", ci="sd", err_style="bars",
+    #                 alpha=0.7, palette="husl", legend=False)
+    # x.set(xlabel="Initial Methionine", ylabel="5-hour Survival Fraction Slope")
+    # plt.legend(title='Culture Type', loc="lower right", labels=['Monoculture', 'Coculture'])
+    # plt.show()
 
     return
 
-generate_new()
-calc_new()
-compile_slopes("frac")
+# generate_new()
+# calc_new()
+# compile_slopes("frac")
 graph()

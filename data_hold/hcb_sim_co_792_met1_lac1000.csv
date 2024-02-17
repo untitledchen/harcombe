@@ -1,0 +1,1 @@
+##culture:co#seed:792#rep:10#mu:(0.01, 0.01)#cycles:10#init_R:(1, 1000, 0)#init_n:(5, 5)#init_lag:(1, 1)#Ta:5#alpha:(3, 3)#mut_func:null#max_lag_change:(1.1, 1.1)

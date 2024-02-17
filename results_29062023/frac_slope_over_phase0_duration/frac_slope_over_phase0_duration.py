@@ -4,7 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from calc_frac import run_calc_frac
 
-seed = 314 #random.randrange(1000)
+seed = 635 #random.randrange(1000)
 phase0_lengths = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
 
 def test():
@@ -44,18 +44,49 @@ def compile_fracs():
     return
 
 def graph():
-    import seaborn as sns
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import copy
 
     data = pd.read_csv(f'fracs_{seed}_phase0.csv')
-    x = sns.relplot(data=data, x="phase0_length", y="frac", kind="line", hue="culture", ci="sd", err_style="bars",
-                    alpha=0.7, palette="husl", legend=False)
-    x.set(xlabel="Phase 0 Length (hr)", ylabel="5-hour Survival Fraction")
-    plt.legend(title='Culture Type', loc="lower right", labels=['Monoculture', 'Coculture'])
+    data1 = data.loc[data['culture'] == "Monoculture"]
+    data2 = data.loc[data['culture'] == "Coculture"]
+    data1_groupby_lac = data1.groupby(['phase0_length'])['frac'].agg(["mean", "std"])
+    data2_groupby_lac = data2.groupby(['phase0_length'])['frac'].agg(["mean", "std"])
+
+    fig, ax = plt.subplots(1, 1, figsize=(5, 5))
+    ax.scatter(data1['phase0_length'], data1['frac'], facecolor="#41A1F8", s=10, linewidths=1,
+               label="Monoculture")
+    ax.errorbar(data1_groupby_lac.index.to_numpy(), data1_groupby_lac["mean"].values,
+                yerr=data1_groupby_lac["std"].values, color="#41A1F8", linewidth=2, linestyle="--", ecolor="#054f94",
+                elinewidth=1, capsize=4)
+
+    offset = 0.2
+    ax.scatter(data2['phase0_length'] + offset, data2['frac'], facecolor="#80D554", s=10, linewidths=1,
+               label="Coculture")
+    ax.errorbar(data2_groupby_lac.index.to_numpy() + offset, data2_groupby_lac["mean"].values,
+                yerr=data1_groupby_lac["std"].values, color="#80D554", linewidth=2, linestyle="--", ecolor="#479023",
+                elinewidth=1, capsize=4)
+
+    ax.set_xlabel("Phase 0 Length (hr)")
+    ax.set_ylabel("Tolerance (5-hour Survival Fraction)")
+    ax.grid(linestyle="--", axis='y')
+    ax.tick_params(direction='in')
+    ax.legend(loc='lower left')
+
     plt.show()
+
+    # data = pd.read_csv(f'fracs_{seed}_phase0.csv')
+    # x = sns.relplot(data=data, x="phase0_length", y="frac", kind="line", hue="culture", ci="sd", err_style="bars",
+    #                 alpha=0.7, palette="husl", legend=False)
+    # x.set(xlabel="Phase 0 Length (hr)", ylabel="5-hour Survival Fraction")
+    # plt.legend(title='Culture Type', loc="lower right", labels=['Monoculture', 'Coculture'])
+    # plt.show()
 
     return
 
 # test()
 # generate()
-compile_fracs()
+# compile_fracs()
 graph()
